@@ -23,22 +23,26 @@ Fluxrico is a premium foundation experience for turning an unfinished idea into 
 
 ## Where things live
 
-- `artifacts/fluxrico/src/App.tsx` — foundation screen and responsive application shell
+- `artifacts/fluxrico/src/App.tsx` — foundation screen, dashboard route, and responsive routing shell
 - `artifacts/fluxrico/src/index.css` — Fluxrico theme tokens, typography, and responsive visual system
 - `artifacts/fluxrico/src/components/fluxrico-mark.tsx` — replaceable Fluxrico brand mark component
 - `artifacts/fluxrico/src/components/fluxrico-signal.tsx` — reusable visual signal component for the foundation screen
+- `artifacts/fluxrico/src/pages/dashboard.tsx` — frontend-only dashboard state and composition
+- `artifacts/fluxrico/src/components/dashboard-*.tsx` — modular dashboard shell and dashboard cards
+- `artifacts/fluxrico/src/components/new-user-dashboard.tsx` — new-user dashboard preview state
 - `lib/api-spec/openapi.yaml` — shared API contract (unchanged; no Fluxrico product API yet)
 
 ## Architecture decisions
 
-- The first release is presentation-first and intentionally has no database, authentication, payment, AI, or product workflow logic.
+- The first release is frontend-only and intentionally has no database, authentication, payment, AI, external integration, or product workflow logic.
 - The Fluxrico web app is a separate root-mounted React + Vite artifact in the existing pnpm workspace.
 - The visual system is defined in the app theme CSS, while brand marks live in focused components so the final SVG asset can replace them later.
-- Navigation labels and calls to action are foundation placeholders; they do not imply implemented product routes.
+- The foundation remains at `/`; the dashboard is a separate `/dashboard` route so the original brand screen stays intact.
+- Dashboard content uses local placeholder state only. The sidebar preview control switches between the in-progress and new-user states without implying persistence.
 
 ## Product
 
-The current product surface is a responsive foundation screen that establishes the Fluxrico brand, typography, color system, application shell, and reusable visual language. Dashboard, Navigator, Roadmap, Library, and all backend-powered features are intentionally deferred.
+The current product surface includes the responsive foundation screen at `/` and the frontend-only dashboard at `/dashboard`. The dashboard establishes the home-base experience with current stage, next move, roadmap progress, goal snapshot, recent activity, and a new-user state. Navigator, Roadmap, Library, and all backend-powered features remain intentionally deferred.
 
 ## User preferences
 

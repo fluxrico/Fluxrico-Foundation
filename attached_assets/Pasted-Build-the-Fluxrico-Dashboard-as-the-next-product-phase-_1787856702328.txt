@@ -1,0 +1,198 @@
+Build the Fluxrico Dashboard as the next product phase.
+
+IMPORTANT:
+- Do NOT rebuild or redesign the existing Fluxrico foundation.
+- Preserve the existing brand identity, typography, colors, spacing, logo treatment, responsive behavior, and reusable components.
+- Do NOT add authentication, payments, AI APIs, database logic, or external integrations yet.
+- This phase is UI + frontend product logic only.
+- Use the existing React + Vite + TypeScript + Tailwind architecture.
+- Keep the code clean, modular, accessible, and production-ready.
+- Do not create fake backend functionality.
+
+PRODUCT PURPOSE:
+The Fluxrico Dashboard is the user's "home base".
+Its purpose is to answer three questions immediately:
+
+1. Where am I?
+2. What should I do next?
+3. How close am I to my goal?
+
+DASHBOARD STRUCTURE:
+
+1. APP SHELL
+- Keep the existing Fluxrico application shell.
+- Desktop sidebar navigation.
+- Responsive mobile navigation.
+- Fluxrico logo/mark.
+- Main content area.
+- Maintain the existing visual language.
+
+2. WELCOME HEADER
+Create a calm, premium header:
+
+"Good morning."
+"Let's turn your idea into your next useful step."
+
+Include a small contextual status such as:
+"Your journey is getting clearer."
+
+Do not make it feel like a generic admin dashboard.
+
+3. CURRENT STAGE CARD
+Create a prominent card showing:
+
+CURRENT STAGE
+"Shape"
+
+Description:
+"Turn your raw idea into a clear direction."
+
+Include:
+- Stage indicator
+- Short explanation
+- Progress indicator
+- Primary CTA: "Continue"
+
+4. NEXT MOVE
+Create the most important section on the dashboard:
+
+NEXT MOVE
+
+"The next useful step"
+
+Show one recommended action.
+
+Example:
+"Define who this idea is for."
+
+Include:
+- Why this matters
+- Estimated effort
+- Primary CTA: "Start next move"
+- Secondary action: "View roadmap"
+
+The design should make this section visually important without being aggressive.
+
+5. ROADMAP PROGRESS
+Create a visual roadmap progress component with these stages:
+
+01 — START
+Raw idea
+
+02 — SHAPE
+Clear angle
+
+03 — MOVE
+Next useful step
+
+04 — BUILD
+Create the offer
+
+05 — LAUNCH
+Put it into the world
+
+06 — GROW
+Improve and scale
+
+Show the current stage clearly.
+
+Use the existing Fluxrico blue/violet visual language.
+
+6. GOAL SNAPSHOT
+Create a compact section showing:
+
+GOAL
+"Build and launch a digital product"
+
+STATUS
+"In progress"
+
+PROGRESS
+"2 of 6 stages"
+
+Do not use fake numerical business metrics.
+
+7. RECENT ACTIVITY
+Create a small activity section with realistic placeholder states:
+
+"Navigator completed"
+"Direction saved"
+"Roadmap updated"
+
+These should be frontend-only placeholder data.
+
+8. EMPTY / NEW USER STATE
+The dashboard must also support a new user who has not completed Navigator.
+
+For this state show:
+
+"Let's find your direction."
+
+"Answer a few questions and Fluxrico will help you identify your next useful step."
+
+Primary CTA:
+"Start Navigator"
+
+9. RESPONSIVE DESIGN
+The dashboard must work beautifully on:
+- Mobile
+- Tablet
+- Desktop
+
+On mobile:
+- Sidebar becomes the existing mobile navigation.
+- Cards stack vertically.
+- Next Move remains visually prominent.
+- No horizontal scrolling.
+
+10. DESIGN QUALITY
+The dashboard should feel:
+- Premium
+- Calm
+- Intelligent
+- Minimal
+- Product-focused
+- Not like an analytics/admin template
+
+Avoid:
+- Excessive gradients
+- Excessive glassmorphism
+- Huge decorative elements
+- Fake charts
+- Generic SaaS dashboard templates
+- Excessive animations
+
+Use subtle motion only where it improves usability.
+
+11. COMPONENT ARCHITECTURE
+Create reusable components where appropriate, for example:
+
+DashboardHeader
+CurrentStageCard
+NextMoveCard
+RoadmapProgress
+GoalSnapshot
+RecentActivity
+NewUserDashboard
+
+Keep components modular.
+
+12. VALIDATION
+Before finishing:
+- Run TypeScript checks.
+- Run the production build.
+- Check desktop layout.
+- Check mobile layout.
+- Fix any errors.
+- Ensure there is no horizontal overflow.
+- Do not leave broken routes.
+
+IMPORTANT:
+When this phase is complete, STOP.
+Do not start Navigator, authentication, payments, database, AI integration, or other product phases.
+
+Report:
+- files created
+- files modified
+- validation results
+- any remaining non-blocking issues
