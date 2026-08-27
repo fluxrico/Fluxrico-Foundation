@@ -1,0 +1,423 @@
+You are the lead frontend architect and senior product engineer for a new SaaS product called Fluxrico.
+
+IMPORTANT:
+This task is ONLY to build the production-quality foundation of the Fluxrico web application.
+Do NOT build the Dashboard, Navigator, Navigator Result, Roadmap, Product Library, payments, authentication flows, AI functionality, or database logic yet.
+
+Do not invent product features that are not specified below.
+
+==================================================
+1. PRODUCT
+==================================================
+
+Product name:
+Fluxrico
+
+Current tagline:
+"From Idea to Income"
+
+Fluxrico is intended to become a premium SaaS platform that helps people turn an idea into a structured path toward creating and monetizing digital content/products.
+
+The product should feel:
+- Premium
+- Modern
+- Intelligent
+- Calm
+- Trustworthy
+- Minimal
+- Professional
+- Distinctive
+
+The experience must NOT look like a generic AI dashboard, generic startup template, or generic admin panel.
+
+==================================================
+2. BRAND DIRECTION
+==================================================
+
+Brand:
+Fluxrico
+
+Existing logo:
+The Fluxrico logo uses a flowing/infinity-inspired symbol with a blue-to-purple visual identity.
+
+Use the existing brand direction as inspiration:
+- Deep blue
+- Royal/indigo blue
+- Violet/purple
+- Subtle blue-purple gradients where appropriate
+- Clean white/light surfaces
+- Dark text
+- Soft neutral backgrounds
+
+Do not overuse gradients.
+
+The visual language should communicate:
+"clarity + momentum + transformation"
+
+The logo should be treated as a real brand asset, not as decorative text.
+
+If no logo asset exists in the project yet:
+- Create a clean temporary logo treatment using the Fluxrico wordmark.
+- Keep the implementation easy to replace later with the final SVG/logo asset.
+- Do NOT generate a random new logo concept.
+
+==================================================
+3. TECHNOLOGY
+==================================================
+
+Choose a stable, production-ready modern web stack that works well inside Replit.
+
+Preferred:
+- Next.js
+- TypeScript
+- Tailwind CSS
+- Component-based architecture
+
+Use accessible, reusable UI components.
+
+If the existing Replit environment already has a suitable framework configured, inspect it first and preserve it when reasonable instead of unnecessarily rebuilding the project.
+
+Do NOT install unnecessary libraries.
+
+Before changing the project:
+1. Inspect the existing files.
+2. Inspect package.json.
+3. Inspect the current framework/configuration.
+4. Reuse existing infrastructure when appropriate.
+
+==================================================
+4. FOUNDATION ONLY
+==================================================
+
+Create a clean application foundation with:
+
+- Global typography
+- Global spacing system
+- Color tokens
+- Border radius tokens
+- Shadow tokens
+- Responsive breakpoints
+- Reusable button styles
+- Reusable card styles
+- Reusable input styles
+- Reusable typography styles
+- Reusable container/layout system
+- Basic navigation shell
+- Basic application shell
+- Error boundary / basic error handling where appropriate
+- Loading state foundation
+- Empty state foundation
+- Responsive mobile behavior
+
+Do not create unnecessary pages.
+
+Create only the minimum routes required to prove that the foundation works.
+
+==================================================
+5. DESIGN SYSTEM
+==================================================
+
+Establish a coherent Fluxrico design system.
+
+Typography:
+Use a modern, highly readable sans-serif typeface.
+
+Hierarchy should include:
+- Display
+- H1
+- H2
+- H3
+- Body
+- Small
+- Caption
+- Button text
+
+Use consistent font weights and line heights.
+
+Color direction:
+
+Primary:
+Deep blue / indigo
+
+Secondary:
+Violet / purple
+
+Neutral:
+White
+Soft gray
+Medium gray
+Dark charcoal
+
+Success:
+A restrained green
+
+Warning:
+A restrained amber
+
+Error:
+A restrained red
+
+Do not make the interface visually noisy.
+
+==================================================
+6. LAYOUT PRINCIPLES
+==================================================
+
+The application should use a professional SaaS layout system.
+
+Desktop:
+- Comfortable max-width
+- Generous whitespace
+- Clear visual hierarchy
+- Consistent alignment
+
+Mobile:
+- Fully responsive
+- Touch-friendly controls
+- No horizontal overflow
+- Proper spacing
+- Navigation must remain usable on a phone
+
+The design must be excellent on a small mobile screen because the product will initially be developed and tested from a phone.
+
+==================================================
+7. COMPONENT ARCHITECTURE
+==================================================
+
+Create reusable components instead of repeating markup.
+
+Suggested structure:
+
+components/
+  ui/
+  layout/
+  brand/
+
+lib/
+  utils/
+  constants/
+
+app/
+  ...
+
+You may adjust the structure if a better architecture is appropriate.
+
+Components should be:
+- Small
+- Reusable
+- Typed
+- Accessible
+- Easy to modify later
+
+Do not create giant components.
+
+==================================================
+8. APPLICATION SHELL
+==================================================
+
+Create the basic Fluxrico application shell.
+
+It should include:
+
+Desktop:
+- Brand/logo area
+- Main navigation placeholder
+- Main content area
+- User/profile placeholder
+- Responsive layout
+
+Mobile:
+- Compact header
+- Fluxrico brand
+- Menu/navigation trigger placeholder
+- Proper touch targets
+
+IMPORTANT:
+Navigation items are placeholders only at this stage.
+
+Do not implement actual Dashboard/Navigator/Roadmap functionality.
+
+You may use placeholder navigation labels such as:
+
+Dashboard
+Navigator
+Roadmap
+Library
+
+But these should NOT contain their actual product functionality yet.
+
+==================================================
+9. INITIAL LANDING/FOUNDATION SCREEN
+==================================================
+
+Create a simple polished foundation screen demonstrating the brand.
+
+It should communicate:
+
+Fluxrico
+From Idea to Income
+
+Include a short supporting statement explaining the general product direction without making unsupported promises.
+
+Include one primary CTA placeholder.
+
+Do not build the full marketing website.
+
+This screen exists only to verify:
+- Branding
+- Typography
+- Colors
+- Responsive layout
+- Buttons
+- Components
+- Overall visual quality
+
+==================================================
+10. UX QUALITY
+==================================================
+
+Follow these principles:
+
+- Clear hierarchy
+- Minimal cognitive load
+- Consistent spacing
+- Strong contrast
+- Accessible controls
+- Keyboard accessibility
+- Visible focus states
+- Touch-friendly mobile controls
+- No unnecessary animations
+
+Animations should be subtle and purposeful.
+
+Avoid:
+- Excessive glassmorphism
+- Excessive shadows
+- Excessive gradients
+- Neon effects
+- 3D effects
+- Generic AI visual clichés
+- Overly rounded cartoon-like interfaces
+
+The product should feel like a serious premium SaaS company.
+
+==================================================
+11. DATA / BACKEND
+==================================================
+
+Do NOT implement a real database yet.
+
+Do NOT implement authentication yet.
+
+Do NOT implement payments yet.
+
+Do NOT implement AI APIs yet.
+
+Use static mock data only where needed to demonstrate reusable components.
+
+Keep the architecture ready for future backend integration.
+
+==================================================
+12. CODE QUALITY
+==================================================
+
+Requirements:
+
+- TypeScript
+- Strong typing
+- No unnecessary `any`
+- Clean component boundaries
+- No duplicated constants
+- No hardcoded repeated design values when tokens can be used
+- Semantic HTML
+- Accessible buttons/inputs
+- Responsive CSS
+- Clean naming
+- Maintainable file structure
+
+Do not leave broken imports or unused dependencies.
+
+==================================================
+13. VALIDATION
+==================================================
+
+After implementation:
+
+1. Run the project.
+2. Check for TypeScript errors.
+3. Check for build errors.
+4. Check for lint errors if configured.
+5. Verify the main screen renders.
+6. Verify mobile responsiveness.
+7. Verify there is no horizontal overflow.
+8. Verify buttons and navigation placeholders do not produce broken routes.
+9. Fix any errors you introduce.
+
+Do not stop at "it looks good".
+Actually validate the application.
+
+==================================================
+14. GIT SAFETY
+==================================================
+
+Do not delete unrelated existing files.
+
+Do not overwrite existing work unless necessary.
+
+Do not add secrets.
+
+Do not create .env files containing real credentials.
+
+Do not commit API keys or tokens.
+
+==================================================
+15. IMPORTANT PRODUCT BOUNDARY
+==================================================
+
+This is FOUNDATION PHASE ONLY.
+
+DO NOT implement:
+
+- Dashboard functionality
+- Navigator questionnaire
+- Navigator Result
+- Match Score
+- Confidence Score
+- Roadmap
+- Current Stage
+- Next Move
+- Product Library
+- Product creation
+- AI recommendation engine
+- Authentication
+- User accounts
+- Payments
+- Subscriptions
+- Database
+- Analytics
+- Email
+- Notifications
+
+These will be implemented in later phases.
+
+==================================================
+16. FINAL REPORT
+==================================================
+
+When finished, report:
+
+1. What you inspected
+2. What you created
+3. Files added
+4. Files modified
+5. Framework used
+6. Dependencies added, if any
+7. How to run the project
+8. Validation/build results
+9. Any remaining issues
+
+Do not claim something was implemented if it was not.
+
+Start by inspecting the existing repository.
+
+Then implement ONLY the foundation described above.

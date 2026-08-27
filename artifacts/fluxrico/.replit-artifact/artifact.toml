@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Fluxrico"
+description = "The polished foundation for Fluxrico, a premium SaaS product helping people move from an idea toward a structured path to digital income."
+version = "1.0.0"
+id = "artifacts/fluxrico"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22594
+
+[services.development]
+run = "pnpm --filter @workspace/fluxrico run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/fluxrico", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/fluxrico/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22594"
+BASE_PATH = "/"
