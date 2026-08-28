@@ -1,0 +1,187 @@
+Build the next Fluxrico product phase: Navigator.
+
+IMPORTANT:
+- Preserve the existing Fluxrico Foundation and Dashboard exactly.
+- Do not redesign existing screens.
+- Do not add authentication, payments, database, AI APIs, or external integrations.
+- This phase is frontend-only with local/mock state.
+- Use the existing React + Vite + TypeScript + Tailwind architecture.
+- Keep the existing Fluxrico visual identity and reusable components.
+- Make the implementation modular and production-quality.
+
+GOAL:
+Navigator helps a user clarify what they are trying to achieve and determines their current direction.
+
+CREATE A /navigator ROUTE.
+
+NAVIGATOR EXPERIENCE:
+
+Step 1 — Goal
+Question:
+"What are you trying to achieve?"
+
+Options:
+- Start a digital product
+- Build an audience
+- Monetize a skill
+- Turn an idea into income
+- I'm not sure yet
+
+This first question should NOT be skippable.
+
+Step 2 — Starting point
+Question:
+"Where are you right now?"
+
+Options:
+- I only have an idea
+- I have a skill
+- I have an audience
+- I already have something to sell
+- I'm already making some income
+
+Allow "Skip for now" on this step.
+
+Step 3 — Strength
+Question:
+"What do you have most of?"
+
+Options:
+- Knowledge
+- Creativity
+- Audience
+- Technical skills
+- Time
+- I'm still figuring it out
+
+Allow "Skip for now".
+
+Step 4 — Preference
+Question:
+"What kind of path sounds most useful?"
+
+Options:
+- Create a digital product
+- Build content
+- Offer a service
+- Build a simple business
+- Explore options first
+
+Allow "Skip for now".
+
+NAVIGATOR UI:
+
+- Show progress at the top.
+- Example: "01 / 04"
+- Clear question hierarchy.
+- Large selectable answer cards.
+- Selected state must be obvious.
+- Continue button.
+- Back button after the first step.
+- "Skip for now" only where specified.
+- Keyboard accessible.
+- Mobile-first responsive design.
+- Calm and premium Fluxrico aesthetic.
+- Avoid generic survey/form appearance.
+
+IMPORTANT PRODUCT BEHAVIOR:
+
+Store answers in frontend state.
+
+After completing Navigator, navigate to:
+
+/navigator/result
+
+Do NOT implement the final recommendation algorithm yet.
+
+Instead create deterministic frontend result data based on the selected answers.
+
+NAVIGATOR RESULT MUST INCLUDE:
+
+1. "Your direction"
+
+Example:
+"Build a digital product around your knowledge."
+
+2. MATCH SCORE
+
+Example:
+"84% Match"
+
+3. CONFIDENCE
+
+Example:
+"High confidence"
+
+Explain briefly:
+"Your answers point consistently toward a product-led path."
+
+4. WHY THIS MATCH
+
+Show 2–3 concise reasons based on the user's answers.
+
+5. NEXT MOVE
+
+"The next useful step"
+
+Example:
+"Define the specific problem your product should solve."
+
+Primary CTA:
+"Start next move"
+
+Secondary CTA:
+"View roadmap"
+
+6. ROADMAP PREVIEW
+
+Show:
+01 Start
+02 Shape
+03 Move
+04 Build
+05 Launch
+06 Grow
+
+Highlight the recommended current stage.
+
+7. EDIT ANSWERS
+
+Allow the user to return to Navigator and change answers.
+
+IMPORTANT:
+Do not make Match Score or Confidence appear scientifically validated.
+They are product signals based on the user's answers, not predictions.
+
+COMPONENTS:
+
+NavigatorShell
+NavigatorProgress
+NavigatorQuestion
+NavigatorOption
+NavigatorResult
+MatchScore
+ConfidenceBadge
+WhyThisMatch
+NextMoveCard
+RoadmapPreview
+
+VALIDATION:
+
+- TypeScript check
+- Production build
+- Verify /navigator
+- Verify /navigator/result
+- Verify mobile layout
+- Verify desktop layout
+- No horizontal overflow
+- No broken routes
+
+When complete, STOP.
+Do not build Roadmap, authentication, payments, database, AI integration, or other features.
+
+Report:
+- files created
+- files modified
+- validation results
+- remaining issues
