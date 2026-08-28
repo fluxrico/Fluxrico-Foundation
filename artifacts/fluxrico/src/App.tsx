@@ -18,6 +18,7 @@ const queryClient = new QueryClient();
 function Home() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showFoundationNote, setShowFoundationNote] = useState(false);
+  const [, setLocation] = useLocation();
   const closeMobile = () => setMobileOpen(false);
 
   return (
@@ -65,7 +66,7 @@ function Home() {
             </h1>
             <p className="fluxrico-rise fluxrico-rise-delay-2 mt-7 max-w-[31rem] text-[1.04rem] leading-7 text-[#626486] sm:mt-8 sm:text-[1.1rem] sm:leading-8" data-testid="text-hero-supporting">Fluxrico is a calm place to turn an unfinished idea into a clearer path for making, sharing, and earning online.</p>
             <div className="fluxrico-rise fluxrico-rise-delay-3 mt-9 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-              <button type="button" onClick={() => setShowFoundationNote(true)} className="fluxrico-focus group inline-flex min-h-14 items-center gap-5 rounded-full bg-[#211F61] px-6 py-3.5 text-[0.73rem] font-bold uppercase tracking-[0.17em] text-white shadow-[0_13px_28px_rgba(33,31,97,0.2)] transition-all hover:-translate-y-0.5 hover:bg-[#35318A] hover:shadow-[0_17px_34px_rgba(33,31,97,0.25)] active:translate-y-0" data-testid="button-start-signal">
+              <button type="button" onClick={() => setLocation('/navigator')} className="fluxrico-focus group inline-flex min-h-14 items-center gap-5 rounded-full bg-[#211F61] px-6 py-3.5 text-[0.73rem] font-bold uppercase tracking-[0.17em] text-white shadow-[0_13px_28px_rgba(33,31,97,0.2)] transition-all hover:-translate-y-0.5 hover:bg-[#35318A] hover:shadow-[0_17px_34px_rgba(33,31,97,0.25)] active:translate-y-0" data-testid="button-start-signal">
                 Start with a signal
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#4F48AA] transition-transform group-hover:translate-x-0.5" aria-hidden="true"><ArrowUpRight size={16} strokeWidth={2.2} /></span>
               </button>

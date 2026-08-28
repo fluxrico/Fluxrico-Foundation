@@ -10,7 +10,7 @@ type DashboardSidebarProps = {
 
 const navigation = [
   { label: 'Home', href: '/dashboard', icon: Home, active: true },
-  { label: 'Navigator', href: '#navigator', icon: Compass, active: false },
+  { label: 'Navigator', href: '/navigator', icon: Compass, active: false },
   { label: 'Library', href: '#library', icon: Library, active: false },
 ];
 
