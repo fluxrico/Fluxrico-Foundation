@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLocation } from 'wouter';
 import { ArrowRight, Check, X } from 'lucide-react';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { DashboardSidebar } from '@/components/dashboard-sidebar';
@@ -10,6 +11,7 @@ import { RecentActivity } from '@/components/recent-activity';
 import { NewUserDashboard } from '@/components/new-user-dashboard';
 
 export default function Dashboard() {
+  const [, setLocation] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [newUser, setNewUser] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -54,7 +56,7 @@ export default function Dashboard() {
                   </div>
                   <div className="mt-10 grid gap-5 lg:grid-cols-[0.92fr_1.08fr]">
                     <CurrentStageCard onContinue={() => announce('Shape is ready when you are. Continue with your direction.')} />
-                    <NextMoveCard onStart={() => announce('Your next move is ready: define who this idea is for.')} onViewRoadmap={() => document.getElementById('roadmap')?.scrollIntoView({ behavior: 'smooth' })} />
+                    <NextMoveCard onStart={() => announce('Your next move is ready: define who this idea is for.')} onViewRoadmap={() => setLocation('/roadmap?stage=Shape')} />
                   </div>
                   <div className="mt-5" id="roadmap"><RoadmapProgress /></div>
                   <div className="mt-5 grid gap-5 lg:grid-cols-[0.82fr_1.18fr]">

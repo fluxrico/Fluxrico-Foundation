@@ -11,6 +11,7 @@ import NotFound from '@/pages/not-found';
 import Dashboard from '@/pages/dashboard';
 import Navigator from '@/pages/navigator';
 import NavigatorResult from '@/pages/navigator-result';
+import Roadmap from '@/pages/roadmap';
 import { NavigatorStateProvider } from '@/components/navigator-state';
 
 const queryClient = new QueryClient();
@@ -144,7 +145,7 @@ function Home() {
 }
 
 function Router() {
-  return <RoutedErrorBoundary><Switch><Route path="/" component={Home} /><Route path="/dashboard" component={Dashboard} /><Route path="/navigator" component={Navigator} /><Route path="/navigator/result" component={NavigatorResult} /><Route component={NotFound} /></Switch></RoutedErrorBoundary>;
+  return <RoutedErrorBoundary><Switch><Route path="/" component={Home} /><Route path="/dashboard" component={Dashboard} /><Route path="/navigator" component={Navigator} /><Route path="/navigator/result" component={NavigatorResult} /><Route path="/roadmap" component={Roadmap} /><Route component={NotFound} /></Switch></RoutedErrorBoundary>;
 }
 
 function RoutedErrorBoundary({ children }: { children: ReactNode }) {
