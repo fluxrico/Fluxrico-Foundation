@@ -68,7 +68,7 @@ export default function NavigatorResult() {
         </div>
 
         <div className="mt-5 grid gap-5 lg:grid-cols-[0.92fr_1.08fr]">
-          <NextMoveCard move={result.nextMove} onStart={() => announce('Your next move is noted locally. No roadmap has been created yet.')} />
+          <NextMoveCard move={result.nextMove} onStart={() => announce('Your next move is noted locally. Tools for this step are still taking shape.')} />
           <RoadmapPreview currentStage={result.currentStage} />
         </div>
 
@@ -82,7 +82,7 @@ export default function NavigatorResult() {
 
         <div className="mt-8 flex flex-col items-start justify-between gap-4 border-t border-[#DDDEEC] pt-5 sm:flex-row sm:items-center">
           <p className="max-w-[33rem] text-xs leading-5 text-[#888AA4]">Navigator gives you a place to begin. The roadmap will stay simple until the next move is clear.</p>
-          <button type="button" onClick={() => { document.getElementById('roadmap-preview')?.scrollIntoView({ behavior: 'smooth' }); announce('Roadmap preview is the full path at a glance.'); }} className="fluxrico-focus inline-flex min-h-11 items-center rounded-full border border-[#D4D5E8] bg-white px-5 text-[0.66rem] font-bold uppercase tracking-[0.15em] text-[#5753A5] transition-colors hover:border-[#8E88E1]" data-testid="button-view-roadmap">
+          <button type="button" onClick={() => setLocation(`/roadmap?stage=${encodeURIComponent(result.currentStage)}`)} className="fluxrico-focus inline-flex min-h-11 items-center rounded-full border border-[#D4D5E8] bg-white px-5 text-[0.66rem] font-bold uppercase tracking-[0.15em] text-[#5753A5] transition-colors hover:border-[#8E88E1]" data-testid="button-view-roadmap">
             View roadmap
           </button>
         </div>
