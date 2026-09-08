@@ -1,27 +1,9 @@
 import { Check, LockKeyhole } from 'lucide-react';
+import { ROADMAP_STAGES, getStageIndex } from '@/lib/journey';
+import type { RoadmapStageName } from '@/lib/journey';
 
-export type RoadmapStageName = 'Start' | 'Shape' | 'Move' | 'Build' | 'Launch' | 'Grow';
-
-export type RoadmapStageInfo = {
-  number: string;
-  name: RoadmapStageName;
-  detail: string;
-  description: string;
-  nextMove: string;
-};
-
-export const ROADMAP_STAGES: RoadmapStageInfo[] = [
-  { number: '01', name: 'Start', detail: 'Raw idea', description: "Turn what's in your head into a few clear words you can act on.", nextMove: 'Write your idea down in one clear sentence.' },
-  { number: '02', name: 'Shape', detail: 'Clear angle', description: 'Turn your raw idea into a clear direction.', nextMove: 'Define who this idea is for.' },
-  { number: '03', name: 'Move', detail: 'Next useful step', description: 'Take the next useful step toward something real.', nextMove: 'Define the specific problem your product should solve.' },
-  { number: '04', name: 'Build', detail: 'Create the offer', description: 'Create the offer your direction points toward.', nextMove: 'Create the first version of your offer.' },
-  { number: '05', name: 'Launch', detail: 'Put it into the world', description: 'Put your work into the world.', nextMove: 'Share your work with the first people who might want it.' },
-  { number: '06', name: 'Grow', detail: 'Improve and scale', description: "Improve and scale what's working.", nextMove: "Look at what's working, and do more of it." },
-];
-
-export function getStageIndex(name: RoadmapStageName): number {
-  return ROADMAP_STAGES.findIndex((stage) => stage.name === name);
-}
+export type { RoadmapStageName };
+export { getStageIndex };
 
 type RoadmapStageCardsProps = {
   currentStage: RoadmapStageName;

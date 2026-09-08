@@ -1,11 +1,7 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import type { NavigatorAnswers } from '@/lib/journey';
 
-export type NavigatorAnswers = {
-  goal?: string;
-  current?: string;
-  strength?: string;
-  path?: string;
-};
+export type { NavigatorAnswers };
 
 type NavigatorStateValue = {
   answers: NavigatorAnswers;
