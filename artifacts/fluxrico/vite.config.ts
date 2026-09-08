@@ -12,7 +12,9 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-
+// The managed workflow supplies BASE_PATH (see .replit-artifact/artifact.toml).
+// Defaulting to '/' keeps local and CI builds working without it.
+const basePath = process.env.BASE_PATH ?? '/';
 
 export default defineConfig({
   base: basePath,

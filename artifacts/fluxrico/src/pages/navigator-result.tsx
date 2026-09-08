@@ -1,44 +1,26 @@
 import { Check } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
-import { ConfidenceBadge, EditAnswersButton, MatchScore, NextMoveCard, RoadmapPreview, WhyThisMatch } from '@/components/navigator-result';
-import type { NavigatorResultData } from '@/components/navigator-result';
+import { ConfidenceBadge, EditAnswersButton, MatchScore, ResultNextMoveCard, RoadmapPreview, WhyThisMatch } from '@/components/navigator-result';
 import { NavigatorShell } from '@/components/navigator-shell';
 import { useNavigatorState } from '@/components/navigator-state';
-
-function buildResult(answers: ReturnType<typeof useNavigatorState>['answers']): NavigatorResultData {
-  const goal = answers.goal ?? 'Start a digital product';
-  const current = answers.current;
-  const strength = answers.strength;
-  const path = answers.path;
-  const productLed = goal === 'Start a digital product' || goal === 'Turn an idea into income' || path === 'Create a digital product';
-  const direction = productLed ? 'Build a digital product around your knowledge.' : goal === 'Build an audience' ? 'Build an audience around a useful point of view.' : 'Turn your strongest skill into a clear offer.';
-  const currentStage = goal === 'I’m not sure yet' || path === 'Explore options first' ? 'Start' : current === 'I only have an idea' ? 'Shape' : current === 'I already have something to sell' || current === 'I’m already making some income' ? 'Move' : 'Shape';
-  const reasons = [
-    `You named “${goal.toLowerCase()}” as the outcome that matters most right now.`,
-    strength ? `${strength} is already a useful signal for the kind of work you can make feel like yours.` : 'You are starting with enough clarity to choose one useful direction.',
-    path ? `A path to “${path.toLowerCase()}” gives this next chapter a practical shape.` : 'A product-led path gives your idea somewhere concrete to go.',
-  ];
-  return {
-    direction,
-    signal: productLed ? '84% Match' : '78% Match',
-    confidence: 'High confidence',
-    confidenceExplanation: 'Your answers point consistently toward a product-led path.',
-    reasons,
-    nextMove: productLed ? 'Define the specific problem your product should solve.' : 'Write down the clearest promise your work can make.',
-    currentStage,
-  };
-}
+import { buildNavigatorResult } from '@/lib/journey';
 
 export default function NavigatorResult() {
   const [, setLocation] = useLocation();
   const { answers } = useNavigatorState();
   const [notice, setNotice] = useState<string | null>(null);
-  const result = buildResult(answers);
+  const noticeTimer = useRef<number | null>(null);
+  const result = buildNavigatorResult(answers);
+
+  useEffect(() => () => {
+    if (noticeTimer.current !== null) window.clearTimeout(noticeTimer.current);
+  }, []);
 
   const announce = (message: string) => {
     setNotice(message);
-    window.setTimeout(() => setNotice(null), 4200);
+    if (noticeTimer.current !== null) window.clearTimeout(noticeTimer.current);
+    noticeTimer.current = window.setTimeout(() => setNotice(null), 4200);
   };
 
   return (
@@ -68,7 +50,7 @@ export default function NavigatorResult() {
         </div>
 
         <div className="mt-5 grid gap-5 lg:grid-cols-[0.92fr_1.08fr]">
-          <NextMoveCard move={result.nextMove} onStart={() => announce('Your next move is noted locally. Tools for this step are still taking shape.')} />
+          <ResultNextMoveCard move={result.nextMove} onStart={() => announce('Your next move is noted locally. Tools for this step are still taking shape.')} />
           <RoadmapPreview currentStage={result.currentStage} />
         </div>
 

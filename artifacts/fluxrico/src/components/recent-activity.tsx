@@ -1,12 +1,12 @@
 import { ArrowUpRight, PenLine } from 'lucide-react';
+import type { JourneyActivity } from '@/lib/journey';
 
-const activity = [
-  { id: 'navigator', label: 'Navigator completed', date: 'Today', detail: 'Your first direction is ready to shape.' },
-  { id: 'direction', label: 'Direction saved', date: 'Yesterday', detail: 'A useful thread to carry forward.' },
-  { id: 'roadmap', label: 'Roadmap updated', date: 'Mon, 8 Apr', detail: 'Shape is your current stage.' },
-];
+type RecentActivityProps = {
+  activity: JourneyActivity[];
+  onViewAll: () => void;
+};
 
-export function RecentActivity({ onViewAll }: { onViewAll: () => void }) {
+export function RecentActivity({ activity, onViewAll }: RecentActivityProps) {
   return (
     <section className="rounded-[1.65rem] border border-[#DADBF0] bg-white p-6 shadow-[0_8px_28px_rgba(44,42,123,0.04)] sm:p-7" aria-labelledby="activity-title" data-testid="card-recent-activity">
       <div className="flex items-center justify-between gap-3">
