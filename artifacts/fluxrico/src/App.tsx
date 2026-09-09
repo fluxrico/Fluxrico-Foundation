@@ -6,6 +6,10 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import Landing from '@/pages/landing';
 import NotFound from '@/pages/not-found';
+import SignUp from '@/pages/signup';
+import SignIn from '@/pages/signin';
+import ForgotPassword from '@/pages/forgot-password';
+import ResetPassword from '@/pages/reset-password';
 import Dashboard from '@/pages/dashboard';
 import Navigator from '@/pages/navigator';
 import NavigatorResult from '@/pages/navigator-result';
@@ -16,6 +20,7 @@ import Profile from '@/pages/profile';
 import Settings from '@/pages/settings';
 import { NavigatorStateProvider } from '@/components/navigator-state';
 import { WorkspaceStateProvider } from '@/lib/workspace-state';
+import { AuthStateProvider } from '@/lib/auth-state';
 
 const queryClient = new QueryClient();
 
@@ -26,6 +31,10 @@ function Router() {
     <RoutedErrorBoundary>
       <Switch>
         <Route path="/" component={Landing} />
+        <Route path="/signup" component={SignUp} />
+        <Route path="/signin" component={SignIn} />
+        <Route path="/forgot-password" component={ForgotPassword} />
+        <Route path="/reset-password" component={ResetPassword} />
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/navigator" component={Navigator} />
         <Route path="/navigator/result" component={NavigatorResult} />
@@ -50,11 +59,13 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-          <NavigatorStateProvider>
-            <WorkspaceStateProvider>
-              <Router />
-            </WorkspaceStateProvider>
-          </NavigatorStateProvider>
+          <AuthStateProvider>
+            <NavigatorStateProvider>
+              <WorkspaceStateProvider>
+                <Router />
+              </WorkspaceStateProvider>
+            </NavigatorStateProvider>
+          </AuthStateProvider>
         </WouterRouter>
         <Toaster />
       </TooltipProvider>

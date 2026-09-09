@@ -64,7 +64,7 @@ export function LandingHeader() {
         <div className="flex items-center gap-2.5">
           <ThemeToggle tone={scrolled ? 'surface' : 'overlay'} />
           <Link
-            href="/dashboard"
+            href="/signin"
             className={cn(
               'fluxrico-focus hidden min-h-10 items-center rounded-full px-4 text-[0.7rem] font-semibold uppercase tracking-[0.12em] transition-colors sm:inline-flex',
               scrolled
@@ -76,7 +76,7 @@ export function LandingHeader() {
             Sign in
           </Link>
           <Link
-            href="/navigator"
+            href="/signup"
             className={cn(
               'landing-btn landing-btn-sm hidden md:inline-flex',
               scrolled ? 'landing-btn-primary' : 'landing-btn-light',
@@ -122,7 +122,7 @@ export function LandingHeader() {
               </a>
             ))}
             <Link
-              href="/dashboard"
+              href="/signin"
               onClick={() => setOpen(false)}
               className="fluxrico-focus block rounded-xl px-4 py-3 text-sm font-semibold text-[hsl(var(--landing-body))] hover:bg-[hsl(var(--landing-surface-2))]"
               data-testid="landing-mobile-link-signin"
@@ -130,7 +130,7 @@ export function LandingHeader() {
               Sign in
             </Link>
             <Link
-              href="/navigator"
+              href="/signup"
               onClick={() => setOpen(false)}
               className="landing-btn landing-btn-primary mt-1 w-full"
               data-testid="landing-mobile-cta"

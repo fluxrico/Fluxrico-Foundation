@@ -30,7 +30,7 @@ export function LandingHero() {
           </p>
 
           <div className="fluxrico-rise fluxrico-rise-delay-3 mt-9 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-            <Link href="/navigator" className="landing-btn landing-btn-light group" data-testid="landing-hero-cta-primary">
+            <Link href="/signup" className="landing-btn landing-btn-light group" data-testid="landing-hero-cta-primary">
               Start building free
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 transition-transform group-hover:translate-x-0.5" aria-hidden="true">
                 <ArrowRight size={14} strokeWidth={2.2} />
