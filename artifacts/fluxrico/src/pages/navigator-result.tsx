@@ -5,10 +5,12 @@ import { ConfidenceBadge, EditAnswersButton, MatchScore, ResultNextMoveCard, Roa
 import { NavigatorShell } from '@/components/navigator-shell';
 import { useNavigatorState } from '@/components/navigator-state';
 import { buildNavigatorResult } from '@/lib/journey';
+import { useAuthState } from '@/lib/auth-state';
 
 export default function NavigatorResult() {
   const [, setLocation] = useLocation();
   const { answers } = useNavigatorState();
+  const { isAuthenticated } = useAuthState();
   const [notice, setNotice] = useState<string | null>(null);
   const noticeTimer = useRef<number | null>(null);
   const result = buildNavigatorResult(answers);
@@ -64,9 +66,24 @@ export default function NavigatorResult() {
 
         <div className="mt-8 flex flex-col items-start justify-between gap-4 border-t border-[#DDDEEC] pt-5 sm:flex-row sm:items-center">
           <p className="max-w-[33rem] text-xs leading-5 text-[#888AA4]">Navigator gives you a place to begin. The roadmap will stay simple until the next move is clear.</p>
-          <button type="button" onClick={() => setLocation(`/roadmap?stage=${encodeURIComponent(result.currentStage)}`)} className="fluxrico-focus inline-flex min-h-11 items-center rounded-full border border-[#D4D5E8] bg-white px-5 text-[0.66rem] font-bold uppercase tracking-[0.15em] text-[#5753A5] transition-colors hover:border-[#8E88E1]" data-testid="button-view-roadmap">
-            View roadmap
-          </button>
+          <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+            <button
+              type="button"
+              onClick={() => setLocation('/roadmap?stage=' + encodeURIComponent(result.currentStage))}
+              className="fluxrico-focus inline-flex min-h-11 items-center justify-center rounded-full border border-[#D4D5E8] bg-white px-5 text-[0.66rem] font-bold uppercase tracking-[0.15em] text-[#5753A5] transition-colors hover:border-[#8E88E1]"
+              data-testid="button-view-roadmap"
+            >
+              View roadmap
+            </button>
+            <button
+              type="button"
+              onClick={() => setLocation(isAuthenticated ? '/dashboard' : '/signin')}
+              className="fluxrico-focus inline-flex min-h-11 items-center justify-center gap-3 rounded-full bg-[#211F61] px-6 text-[0.66rem] font-bold uppercase tracking-[0.15em] text-white shadow-[0_13px_28px_rgba(33,31,97,0.18)] transition-all hover:-translate-y-0.5 hover:bg-[#35318A]"
+              data-testid="button-continue-journey"
+            >
+              Continue to workspace
+            </button>
+          </div>
         </div>
       </div>
     </NavigatorShell>

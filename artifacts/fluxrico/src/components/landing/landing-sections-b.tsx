@@ -199,7 +199,7 @@ export function LandingRoadmapProduct() {
                 Start with a few questions. Leave with a direction, a stage, and a next move — free while Fluxrico is in preview.
               </p>
               <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <Link href="/navigator" className="landing-btn landing-btn-light group" data-testid="landing-final-cta">
+                <Link href="/signup" className="landing-btn landing-btn-light group" data-testid="landing-final-cta">
                   Start your journey
                   <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5">→</span>
                 </Link>
