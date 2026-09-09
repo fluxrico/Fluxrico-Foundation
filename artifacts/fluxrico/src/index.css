@@ -320,13 +320,268 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+/* ── Landing page (marketing surface at /) ───────────────────────────────
+   The landing resolves its own light/dark/system theme on the landing root
+   element. Internal workspace routes keep their authored presentation. */
+
+.landing-root {
+  --landing-ink: 239 45% 12%;
+  --landing-body: 237 20% 38%;
+  --landing-muted: 237 15% 52%;
+  --landing-surface: 0 0% 100%;
+  --landing-surface-2: 240 43% 97%;
+  --landing-canvas: 236 56% 98%;
+  --landing-line: 235 32% 90%;
+  --landing-purple: 248 74% 57%;
+  --landing-purple-deep: 240 62% 24%;
+  --landing-purple-soft: 249 90% 96%;
+  --landing-cyan: 190 85% 42%;
+  --landing-cyan-soft: 190 88% 95%;
+  --landing-panel: 241 55% 12%;
+  --landing-panel-line: 241 40% 22%;
+  --landing-panel-text: 235 45% 97%;
+  --landing-panel-muted: 236 26% 76%;
+  --landing-primary-contrast: 0 0% 100%;
+  --landing-shadow-color: 239 45% 20%;
+}
+
+.landing-root.dark {
+  --landing-ink: 235 45% 97%;
+  --landing-body: 235 22% 80%;
+  --landing-muted: 235 16% 64%;
+  --landing-surface: 240 38% 14%;
+  --landing-surface-2: 241 42% 11%;
+  --landing-canvas: 241 55% 9%;
+  --landing-line: 239 28% 22%;
+  --landing-purple: 250 100% 74%;
+  --landing-purple-deep: 249 60% 84%;
+  --landing-purple-soft: 249 45% 20%;
+  --landing-cyan: 190 88% 60%;
+  --landing-cyan-soft: 191 55% 16%;
+  --landing-panel: 240 50% 11%;
+  --landing-panel-line: 240 32% 20%;
+  --landing-panel-text: 235 45% 97%;
+  --landing-panel-muted: 235 24% 74%;
+  --landing-primary-contrast: 241 60% 8%;
+  --landing-shadow-color: 243 60% 4%;
+}
+
+.landing-root {
+  background-color: hsl(var(--landing-canvas));
+  color: hsl(var(--landing-ink));
+  transition: background-color 260ms ease, color 260ms ease;
+}
+
+.landing-root :focus-visible {
+  outline: 3px solid hsl(var(--landing-cyan) / 0.75);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.landing-shell {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .landing-shell { padding-inline: 2rem; }
+}
+
+@media (min-width: 1024px) {
+  .landing-shell { padding-inline: 2.5rem; }
+}
+
+.landing-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: hsl(var(--landing-purple));
+}
+
+.landing-kicker-dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: hsl(var(--landing-cyan));
+  flex: none;
+}
+
+.landing-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 3.15rem;
+  border-radius: 999px;
+  padding: 0 1.55rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+
+.landing-btn:active {
+  transform: translateY(1px);
+}
+
+.landing-btn-primary {
+  background: hsl(var(--landing-purple-deep));
+  color: hsl(var(--landing-primary-contrast));
+  border: 1px solid transparent;
+  box-shadow: 0 14px 30px hsl(var(--landing-shadow-color) / 0.28);
+}
+
+.landing-root.dark .landing-btn-primary {
+  background: hsl(var(--landing-purple));
+  box-shadow: 0 14px 34px hsl(var(--landing-purple) / 0.22);
+}
+
+.landing-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 38px hsl(var(--landing-shadow-color) / 0.34);
+}
+
+.landing-btn-ghost {
+  background: hsl(var(--landing-surface) / 0.72);
+  color: hsl(var(--landing-ink));
+  border: 1px solid hsl(var(--landing-line));
+}
+
+.landing-btn-ghost:hover {
+  transform: translateY(-2px);
+  border-color: hsl(var(--landing-purple) / 0.45);
+}
+
+.landing-btn-sm {
+  min-height: 2.6rem;
+  padding: 0 1.05rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  gap: 0.45rem;
+}
+
+.landing-btn-light {
+  background: hsl(237 100% 97%);
+  color: hsl(244 64% 29%);
+  border: 1px solid transparent;
+  box-shadow: 0 14px 30px hsl(243 70% 8% / 0.35);
+}
+
+.landing-btn-light:hover {
+  transform: translateY(-2px);
+  background: white;
+}
+
+.landing-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 640ms cubic-bezier(0.22, 0.8, 0.32, 1), transform 640ms cubic-bezier(0.22, 0.8, 0.32, 1);
+}
+
+.landing-reveal.landing-reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.landing-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(52rem 30rem at 85% -12%, hsl(258 90% 62% / 0.2), transparent 62%),
+    radial-gradient(44rem 30rem at -12% 88%, hsl(190 90% 48% / 0.1), transparent 58%),
+    linear-gradient(178deg, hsl(243 65% 10%) 0%, hsl(241 62% 12%) 46%, hsl(240 58% 14%) 100%);
+}
+
+.landing-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(hsl(235 45% 97% / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(235 45% 97% / 0.05) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(64rem 36rem at 62% 18%, black 35%, transparent 72%);
+  -webkit-mask-image: radial-gradient(64rem 36rem at 62% 18%, black 35%, transparent 72%);
+  pointer-events: none;
+}
+
+.landing-hero-fade {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 9rem;
+  background: linear-gradient(to bottom, transparent, hsl(var(--landing-canvas)));
+  pointer-events: none;
+}
+
+.landing-hero-panel {
+  position: relative;
+  border-radius: 1.6rem;
+  border: 1px solid hsl(240 42% 24% / 0.85);
+  background: linear-gradient(180deg, hsl(241 52% 15%) 0%, hsl(241 55% 12%) 100%);
+  box-shadow: 0 34px 90px hsl(243 70% 5% / 0.5), inset 0 1px 0 hsl(235 60% 97% / 0.08);
+}
+
+.landing-progress-track {
+  height: 0.55rem;
+  border-radius: 999px;
+  background: hsl(236 30% 84%);
+  overflow: hidden;
+}
+
+.landing-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, hsl(190 85% 45%), hsl(248 74% 60%));
+}
+
+.landing-root.dark .landing-progress-track {
+  background: hsl(240 30% 22%);
+}
+
+.landing-path-line {
+  stroke-dasharray: 0 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .landing-path-line {
+    animation: landing-path-draw 2.6s cubic-bezier(0.4, 0, 0.2, 1) 400ms forwards;
   }
 }
+
+@keyframes landing-path-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+.landing-accordion-line {
+  position: relative;
+}
+
+.landing-accordion-line::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 1px;
+  background: hsl(var(--landing-line));
+}
+
+.landing-accordion-line:last-child::after {
+  display: none;
+}
+
+@media (max-width: 639px) {
+  .landing-hero-panel {
+    border-radius: 1.25rem;
+  }
+}
+

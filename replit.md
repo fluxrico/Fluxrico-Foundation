@@ -23,7 +23,9 @@ Fluxrico is a premium foundation experience for turning an unfinished idea into 
 
 ## Where things live
 
-- `artifacts/fluxrico/src/App.tsx` — foundation screen, dashboard route, and responsive routing shell
+- `artifacts/fluxrico/src/App.tsx` — routing shell: landing page at `/` plus all workspace routes
+- `artifacts/fluxrico/src/pages/landing.tsx` — marketing landing page (hero, problem, journey, Navigator preview, roadmap, dashboard preview, philosophy, final CTA, footer)
+- `artifacts/fluxrico/src/components/landing/*` — landing-scoped components: theme (light/dark/system, scoped to the landing root), header, hero, sections, and preview chrome
 - `artifacts/fluxrico/src/index.css` — Fluxrico theme tokens, typography, and responsive visual system
 - `artifacts/fluxrico/src/components/fluxrico-mark.tsx` — replaceable Fluxrico brand mark component
 - `artifacts/fluxrico/src/components/fluxrico-signal.tsx` — reusable visual signal component for the foundation screen
@@ -42,7 +44,7 @@ Fluxrico is a premium foundation experience for turning an unfinished idea into 
 
 ## Product
 
-The current product surface includes the responsive foundation screen at `/` and the frontend-only dashboard at `/dashboard`. The dashboard establishes the home-base experience with current stage, next move, roadmap progress, goal snapshot, recent activity, and a new-user state. Navigator, Roadmap, Library, and all backend-powered features remain intentionally deferred.
+The current product surface includes the marketing landing page at `/` and the frontend-only dashboard at `/dashboard`. The dashboard establishes the home-base experience with current stage, next move, roadmap progress, goal snapshot, recent activity, and a new-user state. Navigator, Roadmap, Library, and all backend-powered features remain intentionally deferred.
 
 ## User preferences
 
