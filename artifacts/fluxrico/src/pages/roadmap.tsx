@@ -1,9 +1,10 @@
-import { Check, Compass, X } from 'lucide-react';
+import { Check, Map as MapIcon, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearch } from 'wouter';
 import { AppShell } from '@/components/app-shell';
 import { NextMoveCard } from '@/components/next-move-card';
-import { RoadmapStageCards } from '@/components/roadmap-stage-cards';
+import { RoadmapJourneyMap } from '@/components/roadmap-journey-map';
+import { RoadmapStageDetail } from '@/components/roadmap-stage-detail';
 import { useJourney } from '@/hooks/use-journey';
 import { ROADMAP_STAGES, getStageIndex, stageFromSearch } from '@/lib/journey';
 
@@ -23,17 +24,20 @@ export default function Roadmap() {
     noticeTimer.current = window.setTimeout(() => setNotice(null), 4200);
   };
 
+  // ?stage= deep link wins; otherwise the journey's current stage opens.
   const currentStage = stageFromSearch(search, journey.currentStage);
-  const stageInfo = ROADMAP_STAGES[getStageIndex(currentStage)];
+  const stageIndex = getStageIndex(currentStage);
+  const stageInfo = ROADMAP_STAGES[stageIndex];
+  const isCurrentStage = currentStage === journey.currentStage;
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-[1120px]">
+      <div className="mx-auto max-w-[1180px]">
         <div className="fluxrico-rise flex flex-col justify-between gap-5 sm:flex-row sm:items-start lg:items-end">
           <div>
-            <p className="text-[0.65rem] font-bold uppercase tracking-[0.21em] text-[#6258D0]">Roadmap / the full path</p>
-            <h1 className="mt-3 max-w-[42rem] text-[2.7rem] font-extrabold leading-[0.98] tracking-[-0.075em] text-[#202155] sm:text-[4.2rem]">Your path, one stage at a time.</h1>
-            <p className="mt-4 max-w-[33rem] text-base leading-7 text-[#737696]">Six calm stages between an unfinished idea and a working, growing thing. No pressure to move fast — just a clear next step.</p>
+            <p className="text-[0.65rem] font-bold uppercase tracking-[0.21em] text-[#6258D0]">Roadmap / your complete journey map</p>
+            <h1 className="mt-3 max-w-[42rem] text-[2.7rem] font-extrabold leading-[0.98] tracking-[-0.075em] text-[#202155] sm:text-[4.2rem]">Your Roadmap</h1>
+            <p className="mt-4 max-w-[34rem] text-base leading-7 text-[#737696]">Your journey from starting point to growth. Six stages, each one telling you where you are, what to do, and how to know you are done.</p>
           </div>
           <Link
             href="/dashboard"
@@ -44,52 +48,54 @@ export default function Roadmap() {
           </Link>
         </div>
 
-        <div className="mt-8 flex flex-wrap gap-2" aria-label="Choose a stage">
-          {ROADMAP_STAGES.map((stage) => {
-            const active = stage.name === currentStage;
-            return (
-              <Link
-                key={stage.name}
-                href={`/roadmap?stage=${stage.name}`}
-                aria-current={active ? 'true' : undefined}
-                className={`fluxrico-focus inline-flex min-h-9 items-center gap-2 rounded-full border px-4 text-[0.63rem] font-bold uppercase tracking-[0.13em] transition-colors ${
-                  active
-                    ? 'border-[#6256DB] bg-[#F0EFFF] text-[#5147C2]'
-                    : 'border-[#DCDDED] bg-white text-[#747696] hover:border-[#AAA5E5] hover:text-[#342D83]'
-                }`}
-                data-testid={`link-roadmap-stage-${stage.name.toLowerCase()}`}
-              >
-                <span className={active ? 'text-[#6256DB]' : 'text-[#A0A2B7]'}>{stage.number}</span>
-                {stage.name}
-              </Link>
-            );
-          })}
+        {/* Level 1 — the journey map: all six stages, current one emphasized. */}
+        <div className="fluxrico-rise fluxrico-rise-delay-1 mt-9">
+          <RoadmapJourneyMap currentStage={journey.currentStage} activeStage={currentStage} />
         </div>
 
-        <div className="mt-5 grid gap-5 lg:grid-cols-[1.04fr_0.96fr]">
-          <section className="rounded-[1.8rem] border border-[#DCDDED] bg-white/80 p-6 shadow-[0_18px_40px_rgba(45,42,120,0.06)] sm:p-9" aria-labelledby="roadmap-current-stage-title" data-testid="card-roadmap-current-stage">
-            <div className="flex items-start justify-between gap-5">
-              <div className="flex items-center gap-2 text-[0.63rem] font-bold uppercase tracking-[0.19em] text-[#6861C8]">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#F0EEFF]"><Compass size={15} strokeWidth={1.8} /></span>
-                CURRENT STAGE
+        {/* Level 2 — the selected stage beside its next move. */}
+        <div className="fluxrico-rise fluxrico-rise-delay-2 mt-5 grid gap-5 lg:grid-cols-[1.35fr_0.65fr]">
+          <RoadmapStageDetail currentStage={journey.currentStage} activeStage={currentStage} />
+
+          <div className="flex flex-col gap-5">
+            <NextMoveCard
+              move={stageInfo.nextMove}
+              stageName={stageInfo.name}
+              stageNumber={stageInfo.number}
+              hint={stageInfo.why}
+              onStart={() => announce('Your next move is noted locally. Tools for this step are still taking shape.')}
+            />
+
+            <section
+              className="rounded-[1.65rem] border border-[#DADBF0] bg-white p-6 shadow-[0_8px_28px_rgba(44,42,123,0.04)]"
+              aria-labelledby="roadmap-progress-title"
+              data-testid="card-roadmap-progress"
+            >
+              <div className="flex items-center gap-2 text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#6861C8]">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#F0EEFF]"><MapIcon size={14} strokeWidth={1.9} /></span>
+                Journey progress
               </div>
-              <span className="rounded-full bg-[#F0EEFF] px-3 py-1.5 text-[0.58rem] font-bold uppercase tracking-[0.15em] text-[#6258D0]">{stageInfo.number} / {String(ROADMAP_STAGES.length).padStart(2, '0')}</span>
-            </div>
-            <h2 id="roadmap-current-stage-title" className="mt-6 text-[2.65rem] font-extrabold leading-none tracking-[-0.075em] text-[#202155]">{stageInfo.name}</h2>
-            <p className="mt-3 max-w-[26rem] text-sm leading-6 text-[#727596]">{stageInfo.description}</p>
-            <p className="mt-4 max-w-[26rem] text-sm leading-6 text-[#8B8DAB]"><span className="font-semibold text-[#6258D0]">Why it matters · </span>{stageInfo.why}</p>
-            <div className="mt-8">
-              <div className="flex items-center justify-between text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[#8385A1]"><span>Roadmap progress</span><span className="text-[#6258D0]">{getStageIndex(currentStage) + 1} of {ROADMAP_STAGES.length} stages</span></div>
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#ECECF6]"><div className="h-full rounded-full bg-gradient-to-r from-[#16C5E9] to-[#6857E8] transition-[width] duration-500" style={{ width: `${((getStageIndex(currentStage) + 1) / ROADMAP_STAGES.length) * 100}%` }} /></div>
-            </div>
-          </section>
-          <NextMoveCard
-            move={stageInfo.nextMove}
-            stageName={stageInfo.name}
-            stageNumber={stageInfo.number}
-            hint={stageInfo.why}
-            onStart={() => announce('Your next move is noted locally. Tools for this step are still taking shape.')}
-          />
+              <p className="mt-4 text-sm font-semibold leading-6 text-[#343568]">
+                {isCurrentStage
+                  ? `You are in ${journey.currentStage}.`
+                  : `Viewing ${currentStage}. Your current stage is ${journey.currentStage}.`}
+              </p>
+              <div className="mt-4">
+                <div className="flex items-center justify-between text-[0.62rem] font-bold uppercase tracking-[0.13em] text-[#8385A1]">
+                  <span>Stages</span>
+                  <span className="text-[#6258D0]">{stageIndex + 1} of {ROADMAP_STAGES.length}</span>
+                </div>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#ECECF6]">
+                  <div className="h-full rounded-full bg-gradient-to-r from-[#16C5E9] to-[#6857E8] transition-[width] duration-500" style={{ width: `${((stageIndex + 1) / ROADMAP_STAGES.length) * 100}%` }} />
+                </div>
+              </div>
+              <p className="mt-4 border-t border-[#ECECF1] pt-4 text-xs leading-5 text-[#8587A3]">
+                {journey.completedStages.length > 0
+                  ? `${journey.completedStages.length} stage${journey.completedStages.length === 1 ? '' : 's'} completed so far.`
+                  : 'No stages completed yet — every journey starts at 01.'}
+              </p>
+            </section>
+          </div>
         </div>
 
         {notice && (
@@ -100,12 +106,8 @@ export default function Roadmap() {
           </div>
         )}
 
-        <div className="mt-10">
-          <RoadmapStageCards currentStage={currentStage} />
-        </div>
-
         <div className="mt-10 flex flex-col items-start justify-between gap-4 border-t border-[#DDDEEC] pt-5 sm:flex-row sm:items-center">
-          <p className="max-w-[33rem] text-xs leading-5 text-[#888AA4]">This roadmap reflects where Navigator pointed you. It stays simple until your next move is clear.</p>
+          <p className="max-w-[36rem] text-xs leading-5 text-[#888AA4]">This roadmap reflects where Navigator pointed you. Stages open in place, so you can always see the whole path and the next useful step together.</p>
           <Link href="/dashboard" className="fluxrico-focus inline-flex min-h-11 items-center rounded-full bg-[#211F61] px-5 text-[0.66rem] font-bold uppercase tracking-[0.15em] text-white transition-colors hover:bg-[#35318A]" data-testid="link-roadmap-dashboard-footer">
             Back to Dashboard
           </Link>
