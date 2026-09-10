@@ -38,36 +38,58 @@ export default function Navigator() {
 
   return (
     <NavigatorShell step={step}>
-      <div className="mx-auto max-w-[49rem]">
-        <div className="fluxrico-rise mt-12 sm:mt-16">
-          <NavigatorQuestion
-            question={current.question}
-            options={[...current.options]}
-            selected={selected}
-            onSelect={(value) => setAnswer(current.key, value)}
-          />
-        </div>
-        <div className="mt-9 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
-            {step > 1 ? (
-              <button type="button" onClick={goBack} className="fluxrico-focus inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-[0.66rem] font-bold uppercase tracking-[0.15em] text-[#6B6D8D] transition-colors hover:bg-white hover:text-[#343568]" data-testid="button-navigator-back">
-                <ArrowLeft size={15} strokeWidth={1.8} /> Back
-              </button>
-            ) : (
-              <span className="hidden text-xs text-[#999BB1] sm:block">One answer is enough to begin.</span>
-            )}
-          </div>
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
-            {step > 1 && (
-              <button type="button" onClick={skip} className="fluxrico-focus min-h-11 rounded-full px-3 text-[0.66rem] font-bold uppercase tracking-[0.15em] text-[#747696] underline decoration-[#C7C8DB] underline-offset-4 transition-colors hover:text-[#3E3C88]" data-testid="button-navigator-skip">
-                Skip for now
-              </button>
-            )}
-            <button type="button" onClick={continueFlow} disabled={!selected} className="fluxrico-focus group inline-flex min-h-13 items-center justify-center gap-4 rounded-full bg-[#211F61] px-6 text-[0.7rem] font-bold uppercase tracking-[0.17em] text-white shadow-[0_13px_28px_rgba(33,31,97,0.18)] transition-all hover:-translate-y-0.5 hover:bg-[#35318A] disabled:cursor-not-allowed disabled:bg-[#BFC0D3] disabled:shadow-none" data-testid="button-navigator-continue">
-              {step === steps.length ? 'See my direction' : 'Continue'}
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#4F48AA] transition-transform group-hover:translate-x-0.5"><ArrowRight size={15} strokeWidth={2} /></span>
+      {/* Keyed by step so each question re-enters with the shared rise motion. */}
+      <div key={step} className="fluxrico-rise mx-auto w-full max-w-[49rem]">
+        <NavigatorQuestion
+          step={step}
+          question={current.question}
+          options={[...current.options]}
+          selected={selected}
+          onSelect={(value) => setAnswer(current.key, value)}
+        />
+      </div>
+      <div className="mx-auto mt-10 flex w-full max-w-[49rem] flex-col-reverse gap-3 border-t border-[#E3E4F1] pt-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          {step > 1 ? (
+            <button
+              type="button"
+              onClick={goBack}
+              className="fluxrico-focus inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-[0.66rem] font-bold uppercase tracking-[0.15em] text-[#6B6D8D] transition-colors hover:bg-white hover:text-[#343568]"
+              data-testid="button-navigator-back"
+            >
+              <ArrowLeft size={15} strokeWidth={1.8} /> Back
             </button>
-          </div>
+          ) : (
+            <span className="hidden text-xs text-[#999BB1] sm:block">One answer is enough to begin.</span>
+          )}
+        </div>
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
+          {step > 1 && (
+            <button
+              type="button"
+              onClick={skip}
+              className="fluxrico-focus min-h-11 rounded-full px-3 text-[0.66rem] font-bold uppercase tracking-[0.15em] text-[#747696] underline decoration-[#C7C8DB] underline-offset-4 transition-colors hover:text-[#3E3C88]"
+              data-testid="button-navigator-skip"
+            >
+              Skip for now
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={continueFlow}
+            disabled={!selected}
+            className="fluxrico-focus group inline-flex min-h-13 items-center justify-center gap-4 rounded-full bg-[#211F61] px-6 text-[0.7rem] font-bold uppercase tracking-[0.17em] text-white shadow-[0_13px_28px_rgba(33,31,97,0.18)] transition-all hover:-translate-y-0.5 hover:bg-[#35318A] disabled:cursor-not-allowed disabled:bg-[#BFC0D3] disabled:shadow-none"
+            data-testid="button-navigator-continue"
+          >
+            {step === steps.length ? 'See my direction' : 'Continue'}
+            <span
+              className={`flex h-7 w-7 items-center justify-center rounded-full transition-transform group-hover:translate-x-0.5 ${
+                selected ? 'bg-[#4F48AA]' : 'bg-[#8E90A8]'
+              }`}
+            >
+              <ArrowRight size={15} strokeWidth={2} />
+            </span>
+          </button>
         </div>
       </div>
     </NavigatorShell>

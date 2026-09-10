@@ -297,15 +297,21 @@
   background-size: 32px 32px;
 }
 
-/* Navigator is intentionally scoped: the foundation and dashboard retain their authored surfaces. */
+/* Navigator is intentionally scoped: the foundation and dashboard retain
+   their authored surfaces. The journey reads as its own calm chapter — a
+   periwinkle field with a whisper of cyan, no app chrome. */
 .navigator-shell {
-  background-image: radial-gradient(circle at 84% 8%, rgba(116, 103, 224, 0.08), transparent 27rem),
-    radial-gradient(circle at 8% 72%, rgba(20, 194, 224, 0.055), transparent 24rem);
+  background-image: radial-gradient(52rem 30rem at 86% -6%, rgba(116, 103, 224, 0.075), transparent 62%),
+    radial-gradient(44rem 28rem at -8% 78%, rgba(20, 194, 224, 0.05), transparent 58%);
 }
 
 .navigator-progress {
-  border-bottom: 1px solid rgba(211, 212, 232, 0.9);
-  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(222, 223, 240, 0.85);
+  padding-bottom: 1.35rem;
+}
+
+.navigator-progress-node {
+  box-shadow: 0 1px 2px rgba(45, 42, 120, 0.06);
 }
 
 .navigator-option:focus-visible {

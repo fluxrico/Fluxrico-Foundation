@@ -9,12 +9,13 @@ type MatchScoreProps = {
 
 export function MatchScore({ value }: MatchScoreProps) {
   return (
-    <div className="navigator-score flex items-center gap-3" data-testid="text-match-score">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full border-[5px] border-[#70D6E9] bg-[#29266D] text-[0.7rem] font-extrabold tracking-[-0.03em] text-white">
-        {value}
+    <div className="navigator-score flex shrink-0 items-center gap-3.5" data-testid="text-match-score">
+      <div className="flex h-[4.4rem] w-[4.4rem] flex-col items-center justify-center rounded-2xl border border-[#E0E2F2] bg-gradient-to-b from-white to-[#F4F4FC] shadow-[0_10px_24px_rgba(45,42,120,0.08)]">
+        <span className="text-[1.05rem] font-extrabold tracking-[-0.04em] text-[#2A2A68]">{value.replace(' Match', '')}</span>
+        <span className="mt-0.5 text-[0.5rem] font-bold uppercase tracking-[0.16em] text-[#8A8CAD]">Match</span>
       </div>
       <div>
-        <p className="text-[0.63rem] font-bold uppercase tracking-[0.17em] text-[#8587AD]">Directional signal</p>
+        <p className="text-[0.62rem] font-bold uppercase tracking-[0.17em] text-[#8587AD]">Directional signal</p>
         <p className="mt-1 text-sm font-semibold text-[#454778]">Not a prediction</p>
       </div>
     </div>
@@ -23,9 +24,11 @@ export function MatchScore({ value }: MatchScoreProps) {
 
 export function ConfidenceBadge({ label, explanation }: { label: string; explanation: string }) {
   return (
-    <div className="rounded-2xl border border-[#D4E5E7] bg-[#F0FBFB] px-4 py-3" data-testid="status-confidence">
+    <div className="rounded-2xl border border-[#D8E8EA] bg-[#F1FAFA] px-4 py-3" data-testid="status-confidence">
       <div className="flex items-center gap-2">
-        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#C7EFF1] text-[#167D8D]"><Check size={12} strokeWidth={3} /></span>
+        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#CDEFF1] text-[#167D8D]">
+          <Check size={12} strokeWidth={3} />
+        </span>
         <span className="text-[0.64rem] font-bold uppercase tracking-[0.15em] text-[#217887]">{label}</span>
       </div>
       <p className="mt-2 text-xs leading-5 text-[#527C83]">{explanation}</p>
@@ -35,15 +38,17 @@ export function ConfidenceBadge({ label, explanation }: { label: string; explana
 
 export function WhyThisMatch({ reasons }: { reasons: string[] }) {
   return (
-    <section className="border-t border-[#DDDEEC] pt-7" aria-labelledby="why-match-title">
+    <section className="border-t border-[#DDDEEC] pt-7 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0" aria-labelledby="why-match-title">
       <div className="flex items-center justify-between gap-4">
-        <h2 id="why-match-title" className="text-[0.66rem] font-bold uppercase tracking-[0.2em] text-[#6258D0]">Why this match</h2>
+        <h2 id="why-match-title" className="text-[0.66rem] font-bold uppercase tracking-[0.2em] text-[#6258D0]">
+          Why this match
+        </h2>
         <span className="font-mono text-[0.66rem] text-[#9597AF]">01 — 03</span>
       </div>
       <ul className="mt-5 space-y-4">
         {reasons.map((reason, index) => (
-          <li key={reason} className="flex gap-3 text-sm leading-6 text-[#5D6082]" data-testid={`text-match-reason-${index + 1}`}>
-            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#6256DB]" aria-hidden="true" />
+          <li key={reason} className="flex gap-3.5 text-sm leading-6 text-[#5D6082]" data-testid={`text-match-reason-${index + 1}`}>
+            <span className="mt-2.5 flex h-1.5 w-1.5 shrink-0 items-center justify-center rounded-full bg-[#6256DB]" aria-hidden="true" />
             <span>{reason}</span>
           </li>
         ))}
@@ -64,7 +69,9 @@ export function RoadmapPreview({ currentStage }: RoadmapPreviewProps) {
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
         <div>
           <p className="text-[0.63rem] font-bold uppercase tracking-[0.2em] text-[#6258D0]">A simple view of the path</p>
-          <h2 id="roadmap-preview-title" className="mt-2 text-2xl font-extrabold tracking-[-0.055em] text-[#282961]">Your roadmap preview</h2>
+          <h2 id="roadmap-preview-title" className="mt-2 text-2xl font-extrabold tracking-[-0.055em] text-[#282961]">
+            Your roadmap preview
+          </h2>
         </div>
         <span className="text-xs text-[#8587A3]">Current stage: {currentStage}</span>
       </div>
@@ -72,10 +79,23 @@ export function RoadmapPreview({ currentStage }: RoadmapPreviewProps) {
         {stages.map((stage, index) => {
           const active = stage === currentStage;
           return (
-            <li key={stage} className={`relative rounded-xl border px-3 py-3 ${active ? 'border-[#6256DB] bg-[#F0EFFF]' : 'border-[#E4E4EF] bg-[#FAFAFE]'}`} data-testid={`roadmap-stage-${index + 1}`}>
-              <span className={`font-mono text-[0.62rem] font-bold ${active ? 'text-[#6256DB]' : 'text-[#A0A2B7]'}`}>{String(index + 1).padStart(2, '0')}</span>
+            <li
+              key={stage}
+              className={`relative rounded-xl border px-3 py-3 transition-colors ${
+                active ? 'border-[#5D53C2] bg-[#F1EFFE]' : 'border-[#E4E4EF] bg-[#FAFAFE]'
+              }`}
+              data-testid={`roadmap-stage-${index + 1}`}
+            >
+              <span className={`font-mono text-[0.62rem] font-bold ${active ? 'text-[#5D53C2]' : 'text-[#A0A2B7]'}`}>
+                {String(index + 1).padStart(2, '0')}
+              </span>
               <p className={`mt-2 text-sm font-bold ${active ? 'text-[#342D83]' : 'text-[#66698B]'}`}>{stage}</p>
-              {active && <span className="mt-2 inline-flex items-center gap-1 text-[0.56rem] font-bold uppercase tracking-[0.12em] text-[#6256DB]"><span className="h-1.5 w-1.5 rounded-full bg-[#16C6EA]" />Current</span>}
+              {active && (
+                <span className="mt-2 inline-flex items-center gap-1 text-[0.56rem] font-bold uppercase tracking-[0.12em] text-[#5D53C2]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#16C6EA]" />
+                  Current
+                </span>
+              )}
             </li>
           );
         })}
@@ -86,7 +106,12 @@ export function RoadmapPreview({ currentStage }: RoadmapPreviewProps) {
 
 export function EditAnswersButton({ onClick }: { onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className="fluxrico-focus inline-flex items-center gap-2 rounded-full px-3 py-2 text-[0.64rem] font-bold uppercase tracking-[0.15em] text-[#65678B] transition-colors hover:bg-white hover:text-[#383777]" data-testid="button-edit-answers">
+    <button
+      type="button"
+      onClick={onClick}
+      className="fluxrico-focus inline-flex items-center gap-2 rounded-full px-3 py-2 text-[0.64rem] font-bold uppercase tracking-[0.15em] text-[#65678B] transition-colors hover:bg-white hover:text-[#383777]"
+      data-testid="button-edit-answers"
+    >
       <Pencil size={14} strokeWidth={1.8} /> Edit answers
     </button>
   );
@@ -98,14 +123,36 @@ export function EditAnswersButton({ onClick }: { onClick: () => void }) {
  */
 export function ResultNextMoveCard({ move, onStart }: { move: string; onStart: () => void }) {
   return (
-    <section className="rounded-[1.6rem] bg-[#211F61] p-6 text-white shadow-[0_22px_50px_rgba(39,35,120,0.15)] sm:p-8" aria-labelledby="next-move-title">
-      <div className="flex items-start justify-between gap-4">
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#4D47A8] text-[#BFEAF3]"><Sparkles size={17} strokeWidth={1.8} /></span>
-        <span className="rounded-full border border-white/15 px-3 py-1.5 text-[0.59rem] font-bold uppercase tracking-[0.16em] text-[#BDEAF3]">Recommended</span>
+    <section
+      className="relative overflow-hidden rounded-[1.6rem] bg-[#211F61] p-6 text-white shadow-[0_22px_50px_rgba(39,35,120,0.15)] sm:p-8"
+      aria-labelledby="next-move-title"
+    >
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.5]"
+        style={{
+          backgroundImage:
+            'radial-gradient(30rem 16rem at 88% -20%, rgba(22,198,234,0.16), transparent 60%), radial-gradient(24rem 14rem at -10% 120%, rgba(129,60,233,0.14), transparent 55%)',
+        }}
+        aria-hidden="true"
+      />
+      <div className="relative flex items-start justify-between gap-4">
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#4D47A8] text-[#BFEAF3]">
+          <Sparkles size={17} strokeWidth={1.8} />
+        </span>
+        <span className="rounded-full border border-white/15 px-3 py-1.5 text-[0.59rem] font-bold uppercase tracking-[0.16em] text-[#BDEAF3]">
+          Recommended
+        </span>
       </div>
-      <p className="mt-7 text-[0.63rem] font-bold uppercase tracking-[0.2em] text-[#85DDED]">The next useful step</p>
-      <h2 id="next-move-title" className="mt-3 max-w-[27rem] text-[1.65rem] font-extrabold leading-[1.08] tracking-[-0.055em] text-[#F7F6FF]">{move}</h2>
-      <button type="button" onClick={onStart} className="fluxrico-focus mt-7 inline-flex min-h-11 items-center gap-3 rounded-full bg-[#F1F2FF] px-5 text-[0.66rem] font-bold uppercase tracking-[0.15em] text-[#29266D] transition-transform hover:-translate-y-0.5" data-testid="button-start-next-move">
+      <p className="relative mt-7 text-[0.63rem] font-bold uppercase tracking-[0.2em] text-[#85DDED]">The next useful step</p>
+      <h2 id="next-move-title" className="relative mt-3 max-w-[27rem] text-[1.65rem] font-extrabold leading-[1.08] tracking-[-0.055em] text-[#F7F6FF]">
+        {move}
+      </h2>
+      <button
+        type="button"
+        onClick={onStart}
+        className="fluxrico-focus relative mt-7 inline-flex min-h-11 items-center gap-3 rounded-full bg-[#F1F2FF] px-5 text-[0.66rem] font-bold uppercase tracking-[0.15em] text-[#29266D] transition-transform hover:-translate-y-0.5"
+        data-testid="button-start-next-move"
+      >
         Start next move <ArrowRight size={15} strokeWidth={2} />
       </button>
     </section>
