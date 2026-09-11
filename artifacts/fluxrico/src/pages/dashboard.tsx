@@ -15,14 +15,18 @@ import { useWorkspaceState } from '@/lib/workspace-state';
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const journey = useJourney();
-  const { settings } = useWorkspaceState();
+  const { settings, recordNextMoveStarted } = useWorkspaceState();
   const { user } = useAuthState();
   // A user without Navigator answers sees the new-user state; completing
   // Navigator personalizes the dashboard for the rest of the session.
   const newUser = !journey.hasNavigatorData;
   const firstName = (user?.name ?? journey.profile.name).trim().split(/\s+/)[0];
 
-  const openStage = () => setLocation(`/roadmap?stage=${encodeURIComponent(journey.currentStage)}`);
+  const openStage = () => {
+    // Opening the current next move is a real, existing action — record it.
+    recordNextMoveStarted();
+    setLocation(`/roadmap?stage=${encodeURIComponent(journey.currentStage)}`);
+  };
 
   return (
     <AppShell>
@@ -79,6 +83,7 @@ export default function Dashboard() {
 
             {/* Level 4 — what changed, and a quiet nudge. */}
             <div className="mt-5 grid gap-5 lg:grid-cols-[1.18fr_0.82fr]">
+              {/* journey.recentActivity already merges real session events ahead of samples. */}
               <RecentActivity activity={journey.recentActivity} onViewAll={() => setLocation('/notifications')} />
               <div className="flex flex-col gap-5">
                 <GuidanceCard stageName={journey.currentStage} />

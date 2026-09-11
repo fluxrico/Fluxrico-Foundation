@@ -7,9 +7,12 @@ import { RoadmapJourneyMap } from '@/components/roadmap-journey-map';
 import { RoadmapStageDetail } from '@/components/roadmap-stage-detail';
 import { useJourney } from '@/hooks/use-journey';
 import { ROADMAP_STAGES, getStageIndex, stageFromSearch } from '@/lib/journey';
+import { useWorkspaceState } from '@/lib/workspace-state';
 
 export default function Roadmap() {
   const search = useSearch();
+  // Starting the next move records a real event; everything else here is unchanged.
+  const { recordNextMoveStarted } = useWorkspaceState();
   const journey = useJourney();
   const [notice, setNotice] = useState<string | null>(null);
   const noticeTimer = useRef<number | null>(null);
@@ -63,7 +66,10 @@ export default function Roadmap() {
               stageName={stageInfo.name}
               stageNumber={stageInfo.number}
               hint={stageInfo.why}
-              onStart={() => announce('Your next move is noted locally. Tools for this step are still taking shape.')}
+              onStart={() => {
+                recordNextMoveStarted();
+                announce('Your next move is noted locally. Tools for this step are still taking shape.');
+              }}
             />
 
             <section
