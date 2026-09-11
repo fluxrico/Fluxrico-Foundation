@@ -1,23 +1,30 @@
 import { ArrowRight, Check } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { useLocation } from 'wouter';
+import { Redirect, useLocation } from 'wouter';
 import { ConfidenceBadge, EditAnswersButton, MatchScore, ResultNextMoveCard, RoadmapPreview, WhyThisMatch } from '@/components/navigator-result';
 import { NavigatorShell } from '@/components/navigator-shell';
 import { useNavigatorState } from '@/components/navigator-state';
-import { buildNavigatorResult } from '@/lib/journey';
+import { buildNavigatorResult, isNavigatorComplete } from '@/lib/journey';
 import { useAuthState } from '@/lib/auth-state';
 
 export default function NavigatorResult() {
   const [, setLocation] = useLocation();
-  const { answers } = useNavigatorState();
+  const { answers, clearAnswers } = useNavigatorState();
   const { isAuthenticated } = useAuthState();
   const [notice, setNotice] = useState<string | null>(null);
   const noticeTimer = useRef<number | null>(null);
+  const complete = isNavigatorComplete(answers);
   const result = buildNavigatorResult(answers);
 
   useEffect(() => () => {
     if (noticeTimer.current !== null) window.clearTimeout(noticeTimer.current);
   }, []);
+
+  // Direct access without a complete Navigator flow would render a fabricated
+  // default signal, so send the user back to the actual Navigator questions.
+  if (!complete) {
+    return <Redirect to="/navigator" />;
+  }
 
   const announce = (message: string) => {
     setNotice(message);
@@ -95,6 +102,17 @@ export default function NavigatorResult() {
             Navigator gives you a place to begin. The roadmap will stay simple until the next move is clear.
           </p>
           <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+            <button
+              type="button"
+              onClick={() => {
+                clearAnswers();
+                setLocation('/navigator');
+              }}
+              className="fluxrico-focus inline-flex min-h-11 items-center justify-center rounded-full px-5 text-[0.66rem] font-bold uppercase tracking-[0.15em] text-[#747696] underline decoration-[#C7C8DB] underline-offset-4 transition-colors hover:text-[#3E3C88]"
+              data-testid="button-explore-another-direction"
+            >
+              Explore another direction
+            </button>
             <button
               type="button"
               onClick={() => setLocation('/roadmap?stage=' + encodeURIComponent(result.currentStage))}

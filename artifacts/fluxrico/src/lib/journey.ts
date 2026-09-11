@@ -297,6 +297,14 @@ export type NavigatorAnswers = {
   path?: string;
 };
 
+/** Every required Navigator question, in flow order. */
+export const NAVIGATOR_QUESTION_KEYS = ['goal', 'current', 'strength', 'path'] as const;
+
+/** True only when every required Navigator question has a non-empty answer. */
+export function isNavigatorComplete(answers: NavigatorAnswers): boolean {
+  return NAVIGATOR_QUESTION_KEYS.every((key) => Boolean(answers[key]));
+}
+
 export type NavigatorResultData = {
   direction: string;
   signal: string;

@@ -1,9 +1,11 @@
 import { useMemo } from 'react';
 import {
   JOURNEY,
+  NAVIGATOR_QUESTION_KEYS,
   ROADMAP_STAGES,
   buildNavigatorResult,
   getStageIndex,
+  isNavigatorComplete,
   stageProgress,
   type JourneyActivity,
   type JourneyStatus,
@@ -38,7 +40,9 @@ export function useJourney(): JourneyView {
   const { answers } = useNavigatorState();
 
   return useMemo(() => {
-    const hasNavigatorData = Object.values(answers).some(Boolean);
+    // Navigator is complete only when every required question has an answer;
+    // partial answers must not flip Dashboard/Profile into "completed" state.
+    const hasNavigatorData = isNavigatorComplete(answers);
     const navigatorResult = hasNavigatorData ? buildNavigatorResult(answers) : null;
 
     const currentStage = navigatorResult?.currentStage ?? JOURNEY.currentStage;
