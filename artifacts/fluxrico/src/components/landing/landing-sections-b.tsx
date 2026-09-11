@@ -224,7 +224,7 @@ export function LandingFooter() {
         { label: 'How it works', href: '#how-it-works' },
         { label: 'Roadmap', href: '#roadmap' },
         { label: 'Pricing', href: '#pricing' },
-        { label: 'Sign in', href: '/dashboard' },
+        { label: 'Sign in', href: '/signin' },
       ],
     },
   ];

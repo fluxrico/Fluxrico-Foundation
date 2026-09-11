@@ -3,7 +3,20 @@ import { Bell, Compass, Home, Library, Menu, Route, Settings2, UserRound, X } fr
 import { Link, useLocation } from 'wouter';
 import { FluxricoMark } from '@/components/fluxrico-mark';
 import { JOURNEY } from '@/lib/journey';
+import { useAuthState } from '@/lib/auth-state';
 import { useWorkspaceState } from '@/lib/workspace-state';
+
+/** Derives two-letter avatar initials from a resolved display name. */
+function initialsOf(name: string): string {
+  const letters = name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2);
+  return letters.toUpperCase() || 'MA';
+}
 
 // One shared navigation architecture for every workspace route.
 export const WORKSPACE_NAVIGATION = [
@@ -119,9 +132,13 @@ type AppShellProps = {
 
 export function AppShell({ children }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { unreadCount } = useWorkspaceState();
+  const { unreadCount, settings } = useWorkspaceState();
   const [location] = useLocation();
+  const { user } = useAuthState();
   const closeMobile = () => setMobileOpen(false);
+  // Identity follows the signed-in user, then the workspace's own settings —
+  // the same precedence the Profile and Settings pages read.
+  const displayName = user?.name ?? settings.displayName ?? JOURNEY.profile.name;
 
   return (
     <div className="dashboard-noise min-h-[100dvh] bg-[#F6F7FF] text-[#191A4D]">
@@ -173,9 +190,9 @@ export function AppShell({ children }: AppShellProps) {
                 data-testid="link-header-profile"
               >
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#D9F5FA] text-[0.62rem] font-extrabold text-[#267A8D]">
-                  {JOURNEY.profile.initials}
+                  {initialsOf(displayName)}
                 </span>
-                <span className="hidden sm:inline">{JOURNEY.profile.name}</span>
+                <span className="hidden sm:inline">{displayName}</span>
               </Link>
             </div>
           </header>
