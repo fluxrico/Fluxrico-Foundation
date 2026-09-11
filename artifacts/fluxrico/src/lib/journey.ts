@@ -385,35 +385,87 @@ export function buildNavigatorResult(answers: NavigatorAnswers): NavigatorResult
 
 // ── Library ──────────────────────────────────────────────────────────────────
 
+/**
+ * The kinds of pieces a user keeps in their Library. 'Output' is a
+ * future-ready kind: the product does not generate outputs yet, so the
+ * category exists and explains itself rather than pretending to have data.
+ */
+export type LibraryEntryKind = 'Idea' | 'Note' | 'Resource' | 'Output';
+
 export type LibraryEntry = {
   id: string;
-  kind: 'Idea' | 'Note' | 'Prompt';
+  kind: LibraryEntryKind;
   title: string;
   excerpt: string;
   date: string;
+  /** Journey stage this piece belongs to, when one is relevant. */
+  stage?: RoadmapStageName;
+  /** Marked as important by the user — collected under "Saved". */
+  saved?: boolean;
+  /** Starter pieces shipped with the preview; clearly labeled and removable. */
+  sample?: boolean;
 };
 
-/** Frontend-only placeholder library entries. */
+/**
+ * Frontend-only starter library entries. They show the shape of the Library,
+ * are clearly labeled as samples in the UI, and can be removed by the user.
+ */
 export const LIBRARY_ENTRIES: readonly LibraryEntry[] = [
   {
     id: 'lib-1',
     kind: 'Idea',
     title: 'A weekly planning ritual for makers',
-    excerpt: 'One calm hour to decide the next move before the week decides it for you.',
+    excerpt: 'One calm hour to decide the next move before the week decides it for you. Block it, protect it, and let it end with one written decision.',
     date: 'Today',
+    stage: 'Start',
+    saved: true,
+    sample: true,
   },
   {
     id: 'lib-2',
     kind: 'Note',
     title: 'Who this is for, so far',
-    excerpt: 'Thoughtful people with a skill and no clear offer yet — momentum matters more than scale.',
+    excerpt: 'Thoughtful people with a skill and no clear offer yet — momentum matters more than scale. Revisit after every conversation and sharpen one sentence.',
     date: 'Yesterday',
+    stage: 'Shape',
+    saved: true,
+    sample: true,
   },
   {
     id: 'lib-3',
-    kind: 'Prompt',
+    kind: 'Note',
     title: 'Describe the problem in one sentence',
-    excerpt: 'If the sentence is hard to write, the idea is not clear enough yet.',
+    excerpt: 'If the sentence is hard to write, the idea is not clear enough yet. Keep rewriting until a stranger would nod instead of ask.',
     date: 'Mon, 8 Apr',
+    stage: 'Shape',
+    sample: true,
+  },
+  {
+    id: 'lib-4',
+    kind: 'Resource',
+    title: 'Five questions for your first three conversations',
+    excerpt: 'A short list for early user talks — what they do today, what they tried, what it cost them, what finally worked, and what they would pay for.',
+    date: 'Mon, 8 Apr',
+    stage: 'Move',
+    saved: true,
+    sample: true,
+  },
+  {
+    id: 'lib-5',
+    kind: 'Idea',
+    title: 'Offer first, audience second',
+    excerpt: 'A small offer makes the audience conversation concrete. Ship the smallest useful thing, then let the work attract its people.',
+    date: 'Sun, 7 Apr',
+    stage: 'Build',
+    sample: true,
+  },
+  {
+    id: 'lib-6',
+    kind: 'Resource',
+    title: 'Positioning one-pager, annotated',
+    excerpt: 'A kept example of a one-page positioning document, with notes on what made each line earn its place.',
+    date: 'Sun, 7 Apr',
+    stage: 'Launch',
+    sample: true,
   },
 ];
