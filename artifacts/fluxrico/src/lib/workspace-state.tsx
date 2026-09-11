@@ -3,10 +3,11 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
-import { ROADMAP_STAGE_GUIDES, getStageIndex } from '@/lib/journey';
+import { ROADMAP_STAGE_GUIDES, getStageIndex, type JourneyActivity } from '@/lib/journey';
 
 // ── Notifications ────────────────────────────────────────────────────────────
 // Notifications exist only for meaningful journey events. Each item answers
@@ -28,12 +29,17 @@ export type NotificationItem = {
   href?: string;
   /** Label for the quick action; rendered only alongside href. */
   actionLabel?: string;
+  /** Starter notification shipped with the preview — not a real user event. */
+  sample?: boolean;
 };
 
 // Guidance copy reads from the shared stage guide so the notification and the
 // Roadmap can never drift apart. No journey definitions are duplicated here.
 const shapeGuide = ROADMAP_STAGE_GUIDES[getStageIndex('Shape')];
 
+// Starter notifications: they show the shape of the feed for a first visit and
+// are marked `sample: true` so the UI can label them as examples. Real events
+// recorded in this session are never marked sample.
 const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   {
     id: 'n1',
@@ -45,6 +51,7 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     important: true,
     href: '/roadmap?stage=Shape',
     actionLabel: 'Open your roadmap',
+    sample: true,
   },
   {
     id: 'n2',
@@ -55,6 +62,7 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     read: false,
     href: '/roadmap?stage=Shape',
     actionLabel: 'Open Shape',
+    sample: true,
   },
   {
     id: 'n6',
@@ -65,6 +73,7 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     read: false,
     href: '/roadmap?stage=Shape',
     actionLabel: 'Read the guidance',
+    sample: true,
   },
   {
     id: 'n3',
@@ -75,6 +84,7 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     read: false,
     href: '/library',
     actionLabel: 'Open library',
+    sample: true,
   },
   {
     id: 'n5',
@@ -85,6 +95,7 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     read: true,
     href: '/roadmap',
     actionLabel: 'View roadmap',
+    sample: true,
   },
   {
     id: 'n4',
@@ -95,8 +106,119 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     read: true,
     href: '/navigator',
     actionLabel: 'Take Navigator',
+    sample: true,
   },
 ];
+
+// ── Real session journey events ──────────────────────────────────────────────
+// The workspace is session-local, so activity is recorded here as the user
+// actually acts. One event per meaningful action, keyed so the same action can
+// never append twice (React re-renders, StrictMode double-invocations, and
+// repeated clicks all land on the same key and are ignored after the first).
+
+/** The existing workspace actions that are meaningful enough to record. */
+export type JourneyActivityEventKey =
+  | 'navigator-completed'
+  | 'journey-started'
+  | 'next-move-started'
+  | 'library-piece-added'
+  | 'library-piece-saved';
+
+/** A real event recorded this session, with the moment it happened. */
+type SessionJourneyEvent = {
+  key: JourneyActivityEventKey;
+  stamp: string;
+};
+
+/**
+ * One definition per event: what Recent Activity shows (the activity fields)
+ * and what the matching notification says, when the event genuinely deserves
+ * one (the notification fields). Both read from this single source so the
+ * Dashboard and the Notifications feed can never tell different stories.
+ */
+type JourneyActivityEvent = {
+  activity: {
+    id: string;
+    label: string;
+    detail: string;
+  };
+  notification?: {
+    category: NotificationCategory;
+    title: string;
+    detail: string;
+    important?: boolean;
+    href?: string;
+    actionLabel?: string;
+  };
+};
+
+const SESSION_JOURNEY_EVENTS: Record<JourneyActivityEventKey, JourneyActivityEvent> = {
+  'navigator-completed': {
+    activity: {
+      id: 'event-navigator-completed',
+      label: 'Navigator completed',
+      detail: 'Your answers are in — your direction is ready to shape.',
+    },
+    notification: {
+      category: 'Journey',
+      title: 'Navigator completed',
+      detail: 'Your first direction is ready to shape — your roadmap now reflects it.',
+      important: true,
+      href: '/roadmap?stage=Shape',
+      actionLabel: 'Open your roadmap',
+    },
+  },
+  'journey-started': {
+    activity: {
+      id: 'event-journey-started',
+      label: 'Journey started',
+      detail: 'You entered the workspace and picked up your direction.',
+    },
+  },
+  'next-move-started': {
+    activity: {
+      id: 'event-next-move-started',
+      label: 'Next move started',
+      detail: 'You opened your current next move in the roadmap.',
+    },
+    notification: {
+      category: 'Roadmap',
+      title: 'Next move opened',
+      detail: 'You started your current next move. Continue in the roadmap whenever you are ready.',
+      href: '/roadmap',
+      actionLabel: 'Continue in roadmap',
+    },
+  },
+  'library-piece-added': {
+    activity: {
+      id: 'event-library-piece-added',
+      label: 'Piece added to Library',
+      detail: 'A new piece now lives in your library.',
+    },
+    notification: {
+      category: 'Library',
+      title: 'New piece in your library',
+      detail: 'Your piece was saved to the Library for this session — keep the pieces that matter most starred.',
+      href: '/library',
+      actionLabel: 'Open library',
+    },
+  },
+  'library-piece-saved': {
+    activity: {
+      id: 'event-library-piece-saved',
+      label: 'Piece saved',
+      detail: 'A library piece was marked as important and collected under Saved.',
+    },
+  },
+};
+
+/** "Today, 14:32"-style human timestamp for events recorded this session. */
+function nowStamp(): string {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  return `Today, ${hours}:${minutes}`;
+}
 
 // ── Settings ─────────────────────────────────────────────────────────────────
 
@@ -130,6 +252,16 @@ type WorkspaceStateValue = {
   clearNotifications: () => void;
   settings: WorkspaceSettings;
   updateSettings: (patch: Partial<WorkspaceSettings>) => void;
+  /** Real activity recorded this session, newest first — never sample. */
+  realActivity: JourneyActivity[];
+  /** True once the user has generated at least one real event this session. */
+  hasRealActivity: boolean;
+  /** Convenience wrappers so call sites stay declarative. */
+  recordNavigatorCompleted: () => void;
+  recordJourneyStarted: () => void;
+  recordNextMoveStarted: () => void;
+  recordLibraryPieceAdded: () => void;
+  recordLibraryPieceSaved: () => void;
 };
 
 const WorkspaceStateContext = createContext<WorkspaceStateValue | null>(null);
@@ -137,6 +269,10 @@ const WorkspaceStateContext = createContext<WorkspaceStateValue | null>(null);
 export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
   const [settings, setSettings] = useState<WorkspaceSettings>(INITIAL_SETTINGS);
+  const [sessionEvents, setSessionEvents] = useState<SessionJourneyEvent[]>([]);
+  // Mirrors sessionEvents for the idempotency guard, so recording never
+  // depends on render timing and state updaters stay pure.
+  const sessionEventsRef = useRef<SessionJourneyEvent[]>([]);
 
   const markNotificationRead = useCallback((id: string) => {
     setNotifications((current) =>
@@ -156,6 +292,77 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
     setSettings((current) => ({ ...current, ...patch }));
   }, []);
 
+  // Appends a real (non-sample) notification and keeps the feed bounded. The
+  // newest notification leads, matching how the starter feed is ordered.
+  const appendNotification = useCallback(
+    (notification: NonNullable<JourneyActivityEvent['notification']>, eventId: string) => {
+      setNotifications((current) => {
+        const next = [
+          {
+            id: `event-${eventId}`,
+            timestamp: nowStamp(),
+            read: false,
+            ...notification,
+          },
+          ...current,
+        ];
+        // Bound the feed so one long session cannot turn into noise.
+        return next.length > 60 ? next.slice(0, 60) : next;
+      });
+    },
+    [],
+  );
+
+  // The recorder: idempotent by event key. The same action can only exist
+  // once per session, no matter how often the handler fires. State updaters
+  // stay pure — the guard runs against the ref before any setState.
+  const recordJourneyEvent = useCallback(
+    (key: JourneyActivityEventKey) => {
+      if (sessionEventsRef.current.some((item) => item.key === key)) return;
+      const next = [...sessionEventsRef.current, { key, stamp: nowStamp() }];
+      sessionEventsRef.current = next;
+      setSessionEvents(next);
+      const event = SESSION_JOURNEY_EVENTS[key];
+      if (event.notification) appendNotification(event.notification, key);
+    },
+    [appendNotification],
+  );
+
+  // The real, user-generated counterpart to JOURNEY.recentActivity: same
+  // JourneyActivity shape, newest first, so the Dashboard can merge the two
+  // lists without any transformation of its own.
+  const realActivity = useMemo<JourneyActivity[]>(
+    () =>
+      [...sessionEvents]
+        .reverse()
+        .map(({ key, stamp }) => {
+          const { activity } = SESSION_JOURNEY_EVENTS[key];
+          return { ...activity, date: stamp };
+        }),
+    [sessionEvents],
+  );
+
+  const recordNavigatorCompleted = useCallback(
+    () => recordJourneyEvent('navigator-completed'),
+    [recordJourneyEvent],
+  );
+  const recordJourneyStarted = useCallback(
+    () => recordJourneyEvent('journey-started'),
+    [recordJourneyEvent],
+  );
+  const recordNextMoveStarted = useCallback(
+    () => recordJourneyEvent('next-move-started'),
+    [recordJourneyEvent],
+  );
+  const recordLibraryPieceAdded = useCallback(
+    () => recordJourneyEvent('library-piece-added'),
+    [recordJourneyEvent],
+  );
+  const recordLibraryPieceSaved = useCallback(
+    () => recordJourneyEvent('library-piece-saved'),
+    [recordJourneyEvent],
+  );
+
   const value = useMemo<WorkspaceStateValue>(
     () => ({
       notifications,
@@ -165,8 +372,29 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
       clearNotifications,
       settings,
       updateSettings,
+      realActivity,
+      hasRealActivity: sessionEvents.length > 0,
+      recordNavigatorCompleted,
+      recordJourneyStarted,
+      recordNextMoveStarted,
+      recordLibraryPieceAdded,
+      recordLibraryPieceSaved,
     }),
-    [notifications, settings, markNotificationRead, markAllNotificationsRead, clearNotifications, updateSettings],
+    [
+      notifications,
+      markNotificationRead,
+      markAllNotificationsRead,
+      clearNotifications,
+      settings,
+      updateSettings,
+      sessionEvents,
+      realActivity,
+      recordNavigatorCompleted,
+      recordJourneyStarted,
+      recordNextMoveStarted,
+      recordLibraryPieceAdded,
+      recordLibraryPieceSaved,
+    ],
   );
 
   return <WorkspaceStateContext.Provider value={value}>{children}</WorkspaceStateContext.Provider>;

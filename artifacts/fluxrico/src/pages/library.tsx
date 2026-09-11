@@ -18,6 +18,7 @@ import { AppShell, PageHeader } from '@/components/app-shell';
 import { useJourney } from '@/hooks/use-journey';
 import { LIBRARY_ENTRIES, ROADMAP_STAGES, getStageIndex } from '@/lib/journey';
 import type { LibraryEntry, LibraryEntryKind, RoadmapStageName } from '@/lib/journey';
+import { useWorkspaceState } from '@/lib/workspace-state';
 
 // ── Library vocabulary ───────────────────────────────────────────────────────
 // Categories, kinds, and stage rendering all read from the shared journey
@@ -396,6 +397,7 @@ function AddItemForm({ onAdd, onCancel }: { onAdd: (draft: NewPieceDraft) => voi
 
 export default function Library() {
   const journey = useJourney();
+  const { recordLibraryPieceAdded, recordLibraryPieceSaved } = useWorkspaceState();
   const [entries, setEntries] = useState<LibraryEntry[]>([...LIBRARY_ENTRIES]);
   const [category, setCategory] = useState<CategoryKey>('all');
   const [stageFilter, setStageFilter] = useState<RoadmapStageName | 'all'>('all');
@@ -404,6 +406,11 @@ export default function Library() {
   const [adding, setAdding] = useState(false);
 
   const toggleSave = (id: string) => {
+    const wasSaved = entries.find((entry) => entry.id === id)?.saved === true;
+    if (!wasSaved) {
+      // Marking a piece as important is a real action — record it once saving.
+      recordLibraryPieceSaved();
+    }
     setEntries((current) => current.map((entry) => (entry.id === id ? { ...entry, saved: !entry.saved } : entry)));
   };
 
@@ -423,6 +430,8 @@ export default function Library() {
       saved: false,
     };
     setEntries((current) => [piece, ...current]);
+    // Adding a piece is a real action — record it exactly once per session.
+    recordLibraryPieceAdded();
     setAdding(false);
     setSelectedId(piece.id);
   };

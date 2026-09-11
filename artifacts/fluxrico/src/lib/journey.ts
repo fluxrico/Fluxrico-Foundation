@@ -221,6 +221,8 @@ export type JourneyActivity = {
   label: string;
   date: string;
   detail: string;
+  /** Sample feed entry shipped with the preview — not a real user event. */
+  sample?: boolean;
 };
 
 export type Journey = {
@@ -236,6 +238,10 @@ export type Journey = {
 /**
  * The demo journey. In a real backend this would come from the user record;
  * for now it is the one coherent frontend-only state every surface reads.
+ *
+ * recentActivity is sample content: it shows the shape of the feed for a new
+ * user and is marked `sample: true` so UI can label it as such. Real session
+ * events live in lib/workspace-state and are never marked sample.
  */
 export const JOURNEY: Journey = {
   profile: {
@@ -255,18 +261,21 @@ export const JOURNEY: Journey = {
       label: 'Navigator completed',
       date: 'Today',
       detail: 'Your first direction is ready to shape.',
+      sample: true,
     },
     {
       id: 'direction',
       label: 'Direction saved',
       date: 'Yesterday',
       detail: 'A useful thread to carry forward.',
+      sample: true,
     },
     {
       id: 'roadmap',
       label: 'Roadmap updated',
       date: 'Mon, 8 Apr',
       detail: 'Shape is your current stage.',
+      sample: true,
     },
   ],
 };

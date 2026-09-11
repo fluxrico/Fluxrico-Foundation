@@ -80,8 +80,13 @@ function NotificationRow({ item }: { item: NotificationItem }) {
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
-          <p className={`min-w-0 text-sm ${unread ? 'font-extrabold text-[#25265A]' : 'font-semibold text-[#4B4D76]'}`}>
-            {item.title}
+          <p className={`flex min-w-0 items-center gap-2 text-sm ${unread ? 'font-extrabold text-[#25265A]' : 'font-semibold text-[#4B4D76]'}`}>
+            <span className="truncate">{item.title}</span>
+            {item.sample && (
+              <span className="shrink-0 rounded-full border border-[#E0E1F0] bg-[#FAFAFE] px-2 py-0.5 text-[0.54rem] font-bold uppercase tracking-[0.12em] text-[#8A8CAD]">
+                Sample
+              </span>
+            )}
           </p>
           <div className="flex shrink-0 items-center gap-2.5">
             {item.important && (

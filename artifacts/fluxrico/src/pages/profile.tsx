@@ -74,7 +74,14 @@ function ActivityRow({ item, index }: { item: JourneyActivity; index: number }) 
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-col justify-between gap-1 sm:flex-row sm:gap-3">
-          <p className="text-sm font-bold text-[#3A3B6C]">{item.label}</p>
+          <p className="flex min-w-0 items-center gap-2 text-sm font-bold text-[#3A3B6C]">
+            <span className="truncate">{item.label}</span>
+            {item.sample && (
+              <span className="shrink-0 rounded-full border border-[#E0E1F0] bg-[#FAFAFE] px-2 py-0.5 text-[0.54rem] font-bold uppercase tracking-[0.12em] text-[#8A8CAD]">
+                Sample
+              </span>
+            )}
+          </p>
           <time className="shrink-0 text-[0.64rem] font-medium text-[#9A9CB3]">{item.date}</time>
         </div>
         <p className="mt-1 text-xs leading-5 text-[#8587A3]">{item.detail}</p>
@@ -339,7 +346,14 @@ function ActivityTab({ activity }: { activity: JourneyActivity[] }) {
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-col justify-between gap-1 sm:flex-row sm:gap-3">
-                    <p className="text-sm font-bold text-[#3A3B6C]">{item.title}</p>
+                    <p className="flex min-w-0 items-center gap-2 text-sm font-bold text-[#3A3B6C]">
+                      <span className="truncate">{item.title}</span>
+                      {item.sample && (
+                        <span className="shrink-0 rounded-full border border-[#E0E1F0] bg-[#FAFAFE] px-2 py-0.5 text-[0.54rem] font-bold uppercase tracking-[0.12em] text-[#8A8CAD]">
+                          Sample
+                        </span>
+                      )}
+                    </p>
                     <time className="shrink-0 text-[0.64rem] font-medium text-[#9A9CB3]">{item.timestamp}</time>
                   </div>
                   <p className="mt-1 line-clamp-2 text-xs leading-5 text-[#8587A3]">{item.detail}</p>

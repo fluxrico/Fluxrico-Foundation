@@ -6,11 +6,13 @@ import { NavigatorShell } from '@/components/navigator-shell';
 import { useNavigatorState } from '@/components/navigator-state';
 import { buildNavigatorResult, isNavigatorComplete } from '@/lib/journey';
 import { useAuthState } from '@/lib/auth-state';
+import { useWorkspaceState } from '@/lib/workspace-state';
 
 export default function NavigatorResult() {
   const [, setLocation] = useLocation();
   const { answers, clearAnswers } = useNavigatorState();
   const { isAuthenticated } = useAuthState();
+  const { recordNavigatorCompleted, recordJourneyStarted } = useWorkspaceState();
   const [notice, setNotice] = useState<string | null>(null);
   const noticeTimer = useRef<number | null>(null);
   const complete = isNavigatorComplete(answers);
@@ -19,6 +21,13 @@ export default function NavigatorResult() {
   useEffect(() => () => {
     if (noticeTimer.current !== null) window.clearTimeout(noticeTimer.current);
   }, []);
+
+  // Reaching the result page means the Navigator was genuinely completed this
+  // session. Recording runs in an effect (never during render) and the
+  // recorder is idempotent, so re-renders cannot duplicate the event.
+  useEffect(() => {
+    if (complete) recordNavigatorCompleted();
+  }, [complete, recordNavigatorCompleted]);
 
   // Direct access without a complete Navigator flow would render a fabricated
   // default signal, so send the user back to the actual Navigator questions.
@@ -123,7 +132,10 @@ export default function NavigatorResult() {
             </button>
             <button
               type="button"
-              onClick={() => setLocation(isAuthenticated ? '/dashboard' : '/signin')}
+              onClick={() => {
+                recordJourneyStarted();
+                setLocation(isAuthenticated ? '/dashboard' : '/signin');
+              }}
               className="fluxrico-focus group inline-flex min-h-11 items-center justify-center gap-3 rounded-full bg-[#211F61] px-6 text-[0.66rem] font-bold uppercase tracking-[0.15em] text-white shadow-[0_13px_28px_rgba(33,31,97,0.18)] transition-all hover:-translate-y-0.5 hover:bg-[#35318A]"
               data-testid="button-continue-journey"
             >

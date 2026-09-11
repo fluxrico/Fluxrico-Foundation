@@ -14,6 +14,7 @@ import {
   type RoadmapStageName,
 } from '@/lib/journey';
 import { useNavigatorState } from '@/components/navigator-state';
+import { useWorkspaceState } from '@/lib/workspace-state';
 
 // One coherent view of the user's journey. When Navigator answers exist they
 // personalize the journey; otherwise the base journey applies. Every surface
@@ -38,6 +39,7 @@ export type JourneyView = {
 
 export function useJourney(): JourneyView {
   const { answers } = useNavigatorState();
+  const { realActivity, hasRealActivity } = useWorkspaceState();
 
   return useMemo(() => {
     // Navigator is complete only when every required question has an answer;
@@ -49,6 +51,11 @@ export function useJourney(): JourneyView {
     const stageIndex = getStageIndex(currentStage);
     const progress = stageProgress(currentStage);
     const currentStageInfo = ROADMAP_STAGES[stageIndex];
+
+    // Real events recorded this session lead the feed; the sample entries
+    // (marked sample: true) follow as clearly-labeled examples, and only until
+    // the user's own history exists.
+    const recentActivity = hasRealActivity ? [...realActivity, ...JOURNEY.recentActivity] : JOURNEY.recentActivity;
 
     return {
       profile: JOURNEY.profile,
@@ -62,9 +69,9 @@ export function useJourney(): JourneyView {
       stageTotal: progress.total,
       stagePercent: progress.percent,
       completedStages: progress.completed,
-      recentActivity: JOURNEY.recentActivity,
+      recentActivity,
       hasNavigatorData,
       navigatorResult,
     };
-  }, [answers]);
+  }, [answers, realActivity, hasRealActivity]);
 }
