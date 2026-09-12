@@ -300,6 +300,25 @@ export function journeyProgress(completedStages: readonly RoadmapStageName[]): {
   return { total, completedCount, percent };
 }
 
+/**
+ * The stage the journey currently stands on. The Navigator's placement (or
+ * the base journey stage) is the floor: the journey never stands earlier than
+ * the stage it was placed on. Completing a stage through real work advances
+ * the standing stage to the next one that is not yet completed, and when
+ * every stage from the floor onward is complete the journey stands on the
+ * last stage. This only reads real completedStages — it never implies or
+ * invents completion on its own.
+ */
+export function currentStandingStage(
+  completedStages: readonly RoadmapStageName[],
+  floor: RoadmapStageName,
+): RoadmapStageName {
+  const completed = new Set(completedStages);
+  const floorIndex = Math.max(0, getStageIndex(floor));
+  const firstOpen = ROADMAP_STAGES.slice(floorIndex).find((stage) => !completed.has(stage.name));
+  return firstOpen?.name ?? ROADMAP_STAGES[ROADMAP_STAGES.length - 1].name;
+}
+
 // ── Navigator ────────────────────────────────────────────────────────────────
 
 /** The four Navigator answers, keyed by step. */

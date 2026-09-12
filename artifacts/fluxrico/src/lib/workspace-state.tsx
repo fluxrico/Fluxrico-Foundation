@@ -128,14 +128,15 @@ export type JourneyActivityEventKey =
   | 'navigator-completed'
   | 'journey-started'
   | 'next-move-started'
+  | 'stage-completed'
   | 'library-piece-added'
   | 'library-piece-saved';
 
 /**
- * Stage completion: the only real stage-completion action in the product is
- * completing Navigator, which is exactly what the START guide defines as
- * done — one starting point identified and written down. Mapping that event
- * to 'Start' here keeps completion honest and event-based; reaching a stage
+ * Stage completion: events map to the stage their real work finished.
+ * 'navigator-completed' is what the START guide defines as done — one
+ * starting point identified and written down. 'stage-completed' carries the
+ * finished stage from the Roadmap's explicit user action. Reaching a stage
  * never completes it, and no synthetic completion events are invented.
  */
 const STAGE_COMPLETION_BY_EVENT: Partial<Record<JourneyActivityEventKey, RoadmapStageName>> = {
@@ -146,6 +147,8 @@ const STAGE_COMPLETION_BY_EVENT: Partial<Record<JourneyActivityEventKey, Roadmap
 type SessionJourneyEvent = {
   key: JourneyActivityEventKey;
   stamp: string;
+  /** The stage a 'stage-completed' event finished; absent on other events. */
+  stage?: RoadmapStageName;
 };
 
 /**
@@ -205,6 +208,20 @@ const SESSION_JOURNEY_EVENTS: Record<JourneyActivityEventKey, JourneyActivityEve
       detail: 'You started your current next move. Continue in the roadmap whenever you are ready.',
       href: '/roadmap',
       actionLabel: 'Continue in roadmap',
+    },
+  },
+  'stage-completed': {
+    activity: {
+      id: 'event-stage-completed',
+      label: 'Stage completed',
+      detail: 'The stage definition of done was met — the next stage is waiting.',
+    },
+    notification: {
+      category: 'Roadmap',
+      title: 'Stage completed',
+      detail: 'A stage met its definition of done — the next stage is waiting with its own next move.',
+      href: '/roadmap',
+      actionLabel: 'Open your roadmap',
     },
   },
   'library-piece-added': {
@@ -329,6 +346,8 @@ type WorkspaceStateValue = {
   recordNavigatorCompleted: () => void;
   recordJourneyStarted: () => void;
   recordNextMoveStarted: () => void;
+  /** Marks a roadmap stage genuinely completed through the user's action. */
+  recordStageCompleted: (stage: RoadmapStageName) => void;
 };
 
 const WorkspaceStateContext = createContext<WorkspaceStateValue | null>(null);
@@ -410,15 +429,60 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
     [appendNotification],
   );
 
+  /**
+   * Marks a roadmap stage as genuinely completed — the user's explicit
+   * confirmation that the stage's definition of done (from the shared stage
+   * guide) is met. A stage that was already completed by a real event (Start
+   * via Navigator) is never recorded twice; every other stage completes once
+   * through its own idempotent 'stage-completed' event.
+   */
+  const recordStageCompleted = useCallback(
+    (stage: RoadmapStageName) => {
+      // A stage already counts as complete when a mapped event finished it
+      // (Start via Navigator) or when this same action was already recorded.
+      const alreadyCompleted = sessionEventsRef.current.some(
+        (item) => STAGE_COMPLETION_BY_EVENT[item.key] === stage || (item.key === 'stage-completed' && item.stage === stage),
+      );
+      if (alreadyCompleted) return;
+      const next: SessionJourneyEvent[] = [
+        ...sessionEventsRef.current,
+        { key: 'stage-completed', stamp: nowStamp(), stage },
+      ];
+      sessionEventsRef.current = next;
+      setSessionEvents(next);
+      const event = SESSION_JOURNEY_EVENTS['stage-completed'];
+      if (event.notification) {
+        appendNotification(
+          {
+            ...event.notification,
+            title: `${stage} completed`,
+            detail: `You met ${stage}'s definition of done — the stage now counts as complete. The next stage is waiting with its own next move.`,
+          },
+          `stage-${stage}`,
+        );
+      }
+    },
+    [appendNotification],
+  );
+
   // The real, user-generated counterpart to JOURNEY.recentActivity: same
   // JourneyActivity shape, newest first, so the Dashboard can merge the two
-  // lists without any transformation of its own.
+  // lists without any transformation of its own. Stage-completion events name
+  // the stage they finished, so the feed reads naturally.
   const realActivity = useMemo<JourneyActivity[]>(
     () =>
       [...sessionEvents]
         .reverse()
-        .map(({ key, stamp }) => {
+        .map(({ key, stamp, stage }) => {
           const { activity } = SESSION_JOURNEY_EVENTS[key];
+          if (key === 'stage-completed' && stage) {
+            return {
+              id: `event-stage-completed-${stage.toLowerCase()}`,
+              label: `${stage} completed`,
+              detail: `You met ${stage}'s definition of done — the stage is complete.`,
+              date: stamp,
+            };
+          }
           return { ...activity, date: stamp };
         }),
     [sessionEvents],
@@ -426,17 +490,18 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
 
   // The single source of truth for stage completion: every real event this
   // session is mapped through STAGE_COMPLETION_BY_EVENT, and a stage appears
-  // only when that real work actually happened. Derived state, no second
-  // store to keep in sync, and navigation can never complete a stage.
-  const completedStages = useMemo<RoadmapStageName[]>(
-    () =>
-      [...new Set(
-        sessionEvents
-          .map(({ key }) => STAGE_COMPLETION_BY_EVENT[key])
-          .filter((stage): stage is RoadmapStageName => stage !== undefined),
-      )],
-    [sessionEvents],
-  );
+  // only when that real work actually happened. 'stage-completed' carries the
+  // stage it finished on the event itself. Derived state, no second store to
+  // keep in sync, and navigation can never complete a stage.
+  const completedStages = useMemo<RoadmapStageName[]>(() => {
+    const stages = new Set<RoadmapStageName>();
+    for (const { key, stage } of sessionEvents) {
+      const mapped = STAGE_COMPLETION_BY_EVENT[key];
+      if (mapped) stages.add(mapped);
+      else if (key === 'stage-completed' && stage) stages.add(stage);
+    }
+    return [...stages];
+  }, [sessionEvents]);
 
   const recordNavigatorCompleted = useCallback(
     () => recordJourneyEvent('navigator-completed'),
@@ -449,6 +514,10 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
   const recordNextMoveStarted = useCallback(
     () => recordJourneyEvent('next-move-started'),
     [recordJourneyEvent],
+  );
+  const recordStageCompletedCallback = useCallback(
+    (stage: RoadmapStageName) => recordStageCompleted(stage),
+    [recordStageCompleted],
   );
 
   // ── Library pieces ────────────────────────────────────────────────────────
@@ -509,6 +578,7 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
       recordNavigatorCompleted,
       recordJourneyStarted,
       recordNextMoveStarted,
+      recordStageCompleted: recordStageCompletedCallback,
     }),
     [
       notifications,
@@ -527,6 +597,7 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
       recordNavigatorCompleted,
       recordJourneyStarted,
       recordNextMoveStarted,
+      recordStageCompletedCallback,
     ],
   );
 

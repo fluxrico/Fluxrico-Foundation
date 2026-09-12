@@ -6,13 +6,14 @@ import { NextMoveCard } from '@/components/next-move-card';
 import { RoadmapJourneyMap } from '@/components/roadmap-journey-map';
 import { RoadmapStageDetail } from '@/components/roadmap-stage-detail';
 import { useJourney } from '@/hooks/use-journey';
-import { ROADMAP_STAGES, getStageIndex, stageFromSearch } from '@/lib/journey';
+import { ROADMAP_STAGES, getStageIndex, stageFromSearch, type RoadmapStageName } from '@/lib/journey';
 import { useWorkspaceState } from '@/lib/workspace-state';
 
 export default function Roadmap() {
   const search = useSearch();
-  // Starting the next move records a real event; everything else here is unchanged.
-  const { recordNextMoveStarted } = useWorkspaceState();
+  // Starting the next move and completing a stage record real events;
+  // everything else here is unchanged.
+  const { recordNextMoveStarted, recordStageCompleted } = useWorkspaceState();
   const journey = useJourney();
   const [notice, setNotice] = useState<string | null>(null);
   const noticeTimer = useRef<number | null>(null);
@@ -32,6 +33,13 @@ export default function Roadmap() {
   const stageIndex = getStageIndex(currentStage);
   const stageInfo = ROADMAP_STAGES[stageIndex];
   const isCurrentStage = currentStage === journey.currentStage;
+
+  // Completing a stage is a real user action: it records the session event,
+  // and the existing notice confirms the result immediately on the page.
+  const handleCompleteStage = (stage: RoadmapStageName) => {
+    recordStageCompleted(stage);
+    announce(`${stage} is complete. Progress and your next stage are up to date.`);
+  };
 
   return (
     <AppShell>
@@ -58,7 +66,12 @@ export default function Roadmap() {
 
         {/* Level 2 — the selected stage beside its next move. */}
         <div className="fluxrico-rise fluxrico-rise-delay-2 mt-5 grid gap-5 lg:grid-cols-[1.35fr_0.65fr]">
-          <RoadmapStageDetail currentStage={journey.currentStage} activeStage={currentStage} completedStages={journey.completedStages} />
+          <RoadmapStageDetail
+            currentStage={journey.currentStage}
+            activeStage={currentStage}
+            completedStages={journey.completedStages}
+            onComplete={handleCompleteStage}
+          />
 
           <div className="flex flex-col gap-5">
             <NextMoveCard

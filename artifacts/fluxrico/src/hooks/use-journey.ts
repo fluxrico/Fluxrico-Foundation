@@ -3,6 +3,7 @@ import {
   JOURNEY,
   ROADMAP_STAGES,
   buildNavigatorResult,
+  currentStandingStage,
   getStageIndex,
   isNavigatorComplete,
   journeyProgress,
@@ -48,7 +49,13 @@ export function useJourney(): JourneyView {
     const hasNavigatorData = isNavigatorComplete(answers);
     const navigatorResult = hasNavigatorData ? buildNavigatorResult(answers) : null;
 
-    const currentStage = navigatorResult?.currentStage ?? JOURNEY.currentStage;
+    // The standing stage honors the Navigator's placement as a floor and
+    // advances only through real completions — one shared rule so Dashboard,
+    // Roadmap, and Profile can never disagree about where the journey stands.
+    const currentStage = currentStandingStage(
+      completedStages,
+      navigatorResult?.currentStage ?? JOURNEY.currentStage,
+    );
     const stageIndex = getStageIndex(currentStage);
     const currentStageInfo = ROADMAP_STAGES[stageIndex];
 
@@ -62,13 +69,19 @@ export function useJourney(): JourneyView {
     // the user's own history exists.
     const recentActivity = hasRealActivity ? [...realActivity, ...JOURNEY.recentActivity] : JOURNEY.recentActivity;
 
+    // The Navigator's suggested move describes its own stage's first action;
+    // once the journey has advanced past that stage through real completions,
+    // the standing stage's own next move is the honest one to show.
+    const navigatorPlacement = navigatorResult?.currentStage ?? JOURNEY.currentStage;
+    const advancedPastPlacement = getStageIndex(currentStage) > getStageIndex(navigatorPlacement);
+
     return {
       profile: JOURNEY.profile,
       status: JOURNEY.status,
       goal: JOURNEY.goal,
       currentStage,
       currentStageInfo,
-      nextMove: navigatorResult?.nextMove ?? currentStageInfo.nextMove,
+      nextMove: !advancedPastPlacement && navigatorResult ? navigatorResult.nextMove : currentStageInfo.nextMove,
       direction: navigatorResult?.direction ?? null,
       stageIndex,
       stageTotal: progress.total,
