@@ -141,7 +141,13 @@ export function AppShell({ children }: AppShellProps) {
   const displayName = user?.name ?? settings.displayName ?? JOURNEY.profile.name;
 
   return (
-    <div className="dashboard-noise min-h-[100dvh] bg-[#F6F7FF] text-[#191A4D]">
+    <div
+      className={`dashboard-noise min-h-[100dvh] bg-[#F6F7FF] text-[#191A4D] ${settings.compactMode ? 'ws-compact' : ''} ${
+        settings.reducedMotion ? 'ws-reduced' : ''
+      }`}
+      data-compact={settings.compactMode ? 'true' : undefined}
+      data-reduced-motion={settings.reducedMotion ? 'true' : undefined}
+    >
       <div className="flex min-h-[100dvh]">
         <WorkspaceSidebar mobileOpen={mobileOpen} onClose={closeMobile} />
         <div className="flex min-w-0 flex-1 flex-col">

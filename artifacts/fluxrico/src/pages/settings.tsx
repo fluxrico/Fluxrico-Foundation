@@ -47,7 +47,7 @@ const NOTIFICATION_TOGGLES: ToggleRow[] = [
 
 const PREFERENCE_TOGGLES: ToggleRow[] = [
   { key: 'compactMode', label: 'Compact workspace', description: 'Tighten card spacing across your workspace.' },
-  { key: 'reducedMotion', label: 'Reduced motion', description: 'Let your system’s motion preference lead the interface.' },
+  { key: 'reducedMotion', label: 'Reduced motion', description: 'Calms animations and movement across your workspace.' },
 ];
 
 const APPEARANCE_OPTIONS: { value: ThemePreference; label: string; detail: string; icon: LucideIcon }[] = [
@@ -221,8 +221,7 @@ function AppearanceSelector() {
         })}
       </div>
       <p className="mt-4 text-xs leading-5 text-[#888AA4]">
-        Automatic follows your device. This preference drives the landing and sign-in surfaces today; the workspace
-        keeps its authored light presentation until theming reaches it.
+        Automatic follows your device. Your choice applies across Fluxrico — landing, sign-in, and your workspace.
       </p>
     </div>
   );

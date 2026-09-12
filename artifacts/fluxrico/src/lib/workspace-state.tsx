@@ -242,6 +242,43 @@ const INITIAL_SETTINGS: WorkspaceSettings = {
   reducedMotion: false,
 };
 
+// The two presentation toggles persist locally, so the workspace keeps its
+// density and motion choices across reloads. They stay part of the existing
+// WorkspaceSettings store — no second settings system.
+const PRESENTATION_STORAGE_KEY = 'fluxrico.settings.presentation';
+
+function readStoredPresentation(): Partial<WorkspaceSettings> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = window.localStorage.getItem(PRESENTATION_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) return {};
+    const source = parsed as Record<string, unknown>;
+    const patch: Partial<WorkspaceSettings> = {};
+    for (const key of ['compactMode', 'reducedMotion'] as const) {
+      if (typeof source[key] === 'boolean') patch[key] = source[key];
+    }
+    return patch;
+  } catch {
+    return {};
+  }
+}
+
+function persistPresentation(settings: WorkspaceSettings) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(
+      PRESENTATION_STORAGE_KEY,
+      JSON.stringify({ compactMode: settings.compactMode, reducedMotion: settings.reducedMotion }),
+    );
+  } catch {
+    // Storage can be unavailable (private mode); the setting still applies for this session.
+  }
+}
+
+const INITIAL_PRESENTATION = readStoredPresentation();
+
 // ── Context ──────────────────────────────────────────────────────────────────
 
 type WorkspaceStateValue = {
@@ -268,7 +305,10 @@ const WorkspaceStateContext = createContext<WorkspaceStateValue | null>(null);
 
 export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
-  const [settings, setSettings] = useState<WorkspaceSettings>(INITIAL_SETTINGS);
+  const [settings, setSettings] = useState<WorkspaceSettings>({
+    ...INITIAL_SETTINGS,
+    ...INITIAL_PRESENTATION,
+  });
   const [sessionEvents, setSessionEvents] = useState<SessionJourneyEvent[]>([]);
   // Mirrors sessionEvents for the idempotency guard, so recording never
   // depends on render timing and state updaters stay pure.
@@ -289,7 +329,11 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateSettings = useCallback((patch: Partial<WorkspaceSettings>) => {
-    setSettings((current) => ({ ...current, ...patch }));
+    setSettings((current) => {
+      const next = { ...current, ...patch };
+      persistPresentation(next);
+      return next;
+    });
   }, []);
 
   // Appends a real (non-sample) notification and keeps the feed bounded. The
