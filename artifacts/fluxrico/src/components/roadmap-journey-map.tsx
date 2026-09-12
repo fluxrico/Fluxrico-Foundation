@@ -6,6 +6,8 @@ import type { RoadmapStageName } from '@/lib/journey';
 type RoadmapJourneyMapProps = {
   currentStage: RoadmapStageName;
   activeStage: RoadmapStageName;
+  /** Stages completed through real work — shared source, not index-derived. */
+  completedStages: readonly RoadmapStageName[];
 };
 
 /**
@@ -14,9 +16,10 @@ type RoadmapJourneyMapProps = {
  * Every stage deep-links with `?stage=`; selection updates the detail panel
  * without leaving the page.
  */
-export function RoadmapJourneyMap({ currentStage, activeStage }: RoadmapJourneyMapProps) {
+export function RoadmapJourneyMap({ currentStage, activeStage, completedStages }: RoadmapJourneyMapProps) {
   const currentIndex = getStageIndex(currentStage);
   const activeIndex = getStageIndex(activeStage);
+  const completed = new Set(completedStages);
 
   return (
     <section aria-labelledby="journey-map-heading" data-testid="section-roadmap-journey-map">
@@ -42,7 +45,8 @@ export function RoadmapJourneyMap({ currentStage, activeStage }: RoadmapJourneyM
 
       <ol className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6" aria-label="Fluxrico roadmap stages">
         {ROADMAP_STAGES.map((stage, index) => {
-          const state = index < currentIndex ? 'complete' : index === currentIndex ? 'current' : 'upcoming';
+          const isCompleted = completed.has(stage.name);
+          const state = isCompleted ? 'complete' : index === currentIndex ? 'current' : 'upcoming';
           const selected = index === activeIndex;
 
           return (
@@ -74,7 +78,7 @@ export function RoadmapJourneyMap({ currentStage, activeStage }: RoadmapJourneyM
                     }`}
                     aria-hidden="true"
                   >
-                    {state === 'complete' ? <Check size={14} strokeWidth={2.5} /> : state === 'upcoming' ? <LockKeyhole size={12} strokeWidth={1.8} /> : stage.number}
+                    {isCompleted ? <Check size={14} strokeWidth={2.5} /> : state === 'upcoming' ? <LockKeyhole size={12} strokeWidth={1.8} /> : stage.number}
                   </span>
                   {state === 'current' && (
                     <span className="inline-flex items-center gap-1 rounded-full border border-[#CFCCF6] bg-white px-2 py-0.5 text-[0.54rem] font-bold uppercase tracking-[0.12em] text-[#6256DB]">
@@ -82,7 +86,7 @@ export function RoadmapJourneyMap({ currentStage, activeStage }: RoadmapJourneyM
                       Current
                     </span>
                   )}
-                  {state === 'complete' && (
+                  {isCompleted && (
                     <span className="text-[0.54rem] font-bold uppercase tracking-[0.12em] text-[#6A5BE2]">Done</span>
                   )}
                 </div>

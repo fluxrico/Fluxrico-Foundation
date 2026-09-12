@@ -7,7 +7,12 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { ROADMAP_STAGE_GUIDES, getStageIndex, type JourneyActivity } from '@/lib/journey';
+import {
+  ROADMAP_STAGE_GUIDES,
+  getStageIndex,
+  type JourneyActivity,
+  type RoadmapStageName,
+} from '@/lib/journey';
 
 // ── Notifications ────────────────────────────────────────────────────────────
 // Notifications exist only for meaningful journey events. Each item answers
@@ -123,6 +128,17 @@ export type JourneyActivityEventKey =
   | 'next-move-started'
   | 'library-piece-added'
   | 'library-piece-saved';
+
+/**
+ * Stage completion: the only real stage-completion action in the product is
+ * completing Navigator, which is exactly what the START guide defines as
+ * done — one starting point identified and written down. Mapping that event
+ * to 'Start' here keeps completion honest and event-based; reaching a stage
+ * never completes it, and no synthetic completion events are invented.
+ */
+const STAGE_COMPLETION_BY_EVENT: Partial<Record<JourneyActivityEventKey, RoadmapStageName>> = {
+  'navigator-completed': 'Start',
+};
 
 /** A real event recorded this session, with the moment it happened. */
 type SessionJourneyEvent = {
@@ -293,6 +309,11 @@ type WorkspaceStateValue = {
   realActivity: JourneyActivity[];
   /** True once the user has generated at least one real event this session. */
   hasRealActivity: boolean;
+  /**
+   * Stages completed through real work this session — the single source of
+   * truth for progress. Empty until a real stage-completion event exists.
+   */
+  completedStages: RoadmapStageName[];
   /** Convenience wrappers so call sites stay declarative. */
   recordNavigatorCompleted: () => void;
   recordJourneyStarted: () => void;
@@ -386,6 +407,20 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
     [sessionEvents],
   );
 
+  // The single source of truth for stage completion: every real event this
+  // session is mapped through STAGE_COMPLETION_BY_EVENT, and a stage appears
+  // only when that real work actually happened. Derived state, no second
+  // store to keep in sync, and navigation can never complete a stage.
+  const completedStages = useMemo<RoadmapStageName[]>(
+    () =>
+      [...new Set(
+        sessionEvents
+          .map(({ key }) => STAGE_COMPLETION_BY_EVENT[key])
+          .filter((stage): stage is RoadmapStageName => stage !== undefined),
+      )],
+    [sessionEvents],
+  );
+
   const recordNavigatorCompleted = useCallback(
     () => recordJourneyEvent('navigator-completed'),
     [recordJourneyEvent],
@@ -418,6 +453,7 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
       updateSettings,
       realActivity,
       hasRealActivity: sessionEvents.length > 0,
+      completedStages,
       recordNavigatorCompleted,
       recordJourneyStarted,
       recordNextMoveStarted,
@@ -433,6 +469,7 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
       updateSettings,
       sessionEvents,
       realActivity,
+      completedStages,
       recordNavigatorCompleted,
       recordJourneyStarted,
       recordNextMoveStarted,

@@ -12,6 +12,8 @@ import {
 type RoadmapStageDetailProps = {
   currentStage: RoadmapStageName;
   activeStage: RoadmapStageName;
+  /** Stages completed through real work — shared source, not index-derived. */
+  completedStages: readonly RoadmapStageName[];
 };
 
 /** One small labeled block inside the stage detail. */
@@ -42,11 +44,15 @@ function DetailBlock({
  * DEFINITION OF DONE → NEXT MOVE. Roadmap is an action system, so every
  * section is concrete and specific to the selected stage.
  */
-export function RoadmapStageDetail({ currentStage, activeStage }: RoadmapStageDetailProps) {
+export function RoadmapStageDetail({ currentStage, activeStage, completedStages }: RoadmapStageDetailProps) {
   const stageIndex = getStageIndex(activeStage);
   const stage: RoadmapStageInfo = ROADMAP_STAGES[stageIndex];
   const guide = ROADMAP_STAGE_GUIDES[stageIndex];
-  const state = stageIndex < getStageIndex(currentStage) ? 'complete' : stageIndex === getStageIndex(currentStage) ? 'current' : 'upcoming';
+  // A stage is complete only through real completed work, never by position;
+  // the current stage is still highlighted even when it is not yet complete.
+  const isCompleted = completedStages.includes(activeStage);
+  const state =
+    isCompleted ? 'complete' : stageIndex === getStageIndex(currentStage) ? 'current' : 'upcoming';
   const prevStage = stageIndex > 0 ? ROADMAP_STAGES[stageIndex - 1] : null;
   const nextStage = stageIndex < ROADMAP_STAGES.length - 1 ? ROADMAP_STAGES[stageIndex + 1] : null;
 
