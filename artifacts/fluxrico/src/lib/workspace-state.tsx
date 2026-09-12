@@ -8,9 +8,11 @@ import {
   type ReactNode,
 } from 'react';
 import {
+  LIBRARY_ENTRIES,
   ROADMAP_STAGE_GUIDES,
   getStageIndex,
   type JourneyActivity,
+  type LibraryEntry,
   type RoadmapStageName,
 } from '@/lib/journey';
 
@@ -314,12 +316,19 @@ type WorkspaceStateValue = {
    * truth for progress. Empty until a real stage-completion event exists.
    */
   completedStages: RoadmapStageName[];
+  /**
+   * Library pieces for this session: the starter sample entries plus every
+   * piece the user adds. The single source of truth for the Library page, so
+   * adds, saved stars, and removals survive navigation within the session.
+   */
+  libraryEntries: LibraryEntry[];
+  addLibraryEntry: (entry: LibraryEntry) => void;
+  toggleLibraryEntrySaved: (id: string) => void;
+  removeLibraryEntry: (id: string) => void;
   /** Convenience wrappers so call sites stay declarative. */
   recordNavigatorCompleted: () => void;
   recordJourneyStarted: () => void;
   recordNextMoveStarted: () => void;
-  recordLibraryPieceAdded: () => void;
-  recordLibraryPieceSaved: () => void;
 };
 
 const WorkspaceStateContext = createContext<WorkspaceStateValue | null>(null);
@@ -334,6 +343,14 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
   // Mirrors sessionEvents for the idempotency guard, so recording never
   // depends on render timing and state updaters stay pure.
   const sessionEventsRef = useRef<SessionJourneyEvent[]>([]);
+
+  // Library pieces live here, not in the Library page, so user-generated
+  // entries and saved stars survive navigation for the session. The starter
+  // sample entries seed the list and keep their `sample` label.
+  const [libraryEntries, setLibraryEntries] = useState<LibraryEntry[]>([...LIBRARY_ENTRIES]);
+  // Mirrors libraryEntries for the same ref-before-setState pattern the event
+  // recorder uses, so mutators never depend on render timing.
+  const libraryEntriesRef = useRef<LibraryEntry[]>(libraryEntries);
 
   const markNotificationRead = useCallback((id: string) => {
     setNotifications((current) =>
@@ -433,14 +450,45 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
     () => recordJourneyEvent('next-move-started'),
     [recordJourneyEvent],
   );
-  const recordLibraryPieceAdded = useCallback(
-    () => recordJourneyEvent('library-piece-added'),
+
+  // ── Library pieces ────────────────────────────────────────────────────────
+  // The Library page owns no entries state of its own: pieces live here so
+  // adds, saved stars, and removals survive navigation within the session.
+  // Real activity is recorded through the same idempotent event recorder as
+  // before, so no event can ever append twice.
+  const addLibraryEntry = useCallback(
+    (entry: LibraryEntry) => {
+      const next = [entry, ...libraryEntriesRef.current];
+      libraryEntriesRef.current = next;
+      setLibraryEntries(next);
+      // Adding a piece is a real action — recorded exactly once per session.
+      recordJourneyEvent('library-piece-added');
+    },
     [recordJourneyEvent],
   );
-  const recordLibraryPieceSaved = useCallback(
-    () => recordJourneyEvent('library-piece-saved'),
+
+  const toggleLibraryEntrySaved = useCallback(
+    (id: string) => {
+      const wasSaved = libraryEntriesRef.current.find((item) => item.id === id)?.saved === true;
+      if (!wasSaved) {
+        // Marking a piece as important is a real action — same event, same
+        // once-per-session guarantee as before.
+        recordJourneyEvent('library-piece-saved');
+      }
+      const next = libraryEntriesRef.current.map((item) =>
+        item.id === id ? { ...item, saved: !item.saved } : item,
+      );
+      libraryEntriesRef.current = next;
+      setLibraryEntries(next);
+    },
     [recordJourneyEvent],
   );
+
+  const removeLibraryEntry = useCallback((id: string) => {
+    const next = libraryEntriesRef.current.filter((item) => item.id !== id);
+    libraryEntriesRef.current = next;
+    setLibraryEntries(next);
+  }, []);
 
   const value = useMemo<WorkspaceStateValue>(
     () => ({
@@ -454,11 +502,13 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
       realActivity,
       hasRealActivity: sessionEvents.length > 0,
       completedStages,
+      libraryEntries,
+      addLibraryEntry,
+      toggleLibraryEntrySaved,
+      removeLibraryEntry,
       recordNavigatorCompleted,
       recordJourneyStarted,
       recordNextMoveStarted,
-      recordLibraryPieceAdded,
-      recordLibraryPieceSaved,
     }),
     [
       notifications,
@@ -470,11 +520,13 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
       sessionEvents,
       realActivity,
       completedStages,
+      libraryEntries,
+      addLibraryEntry,
+      toggleLibraryEntrySaved,
+      removeLibraryEntry,
       recordNavigatorCompleted,
       recordJourneyStarted,
       recordNextMoveStarted,
-      recordLibraryPieceAdded,
-      recordLibraryPieceSaved,
     ],
   );
 

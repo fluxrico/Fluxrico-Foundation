@@ -16,7 +16,7 @@ import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from 'wouter';
 import { AppShell, PageHeader } from '@/components/app-shell';
 import { useJourney } from '@/hooks/use-journey';
-import { LIBRARY_ENTRIES, ROADMAP_STAGES, getStageIndex } from '@/lib/journey';
+import { ROADMAP_STAGES, getStageIndex } from '@/lib/journey';
 import type { LibraryEntry, LibraryEntryKind, RoadmapStageName } from '@/lib/journey';
 import { useWorkspaceState } from '@/lib/workspace-state';
 
@@ -397,25 +397,24 @@ function AddItemForm({ onAdd, onCancel }: { onAdd: (draft: NewPieceDraft) => voi
 
 export default function Library() {
   const journey = useJourney();
-  const { recordLibraryPieceAdded, recordLibraryPieceSaved } = useWorkspaceState();
-  const [entries, setEntries] = useState<LibraryEntry[]>([...LIBRARY_ENTRIES]);
+  // Library data lives in the shared workspace session state (see
+  // lib/workspace-state.tsx), not in this page — so pieces a user adds or
+  // saves survive navigating to Dashboard/Roadmap and back within the
+  // session. Search, filters, and selection stay page-local UI state.
+  const {
+    libraryEntries: entries,
+    addLibraryEntry,
+    toggleLibraryEntrySaved,
+    removeLibraryEntry,
+  } = useWorkspaceState();
   const [category, setCategory] = useState<CategoryKey>('all');
   const [stageFilter, setStageFilter] = useState<RoadmapStageName | 'all'>('all');
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
 
-  const toggleSave = (id: string) => {
-    const wasSaved = entries.find((entry) => entry.id === id)?.saved === true;
-    if (!wasSaved) {
-      // Marking a piece as important is a real action — record it once saving.
-      recordLibraryPieceSaved();
-    }
-    setEntries((current) => current.map((entry) => (entry.id === id ? { ...entry, saved: !entry.saved } : entry)));
-  };
-
   const removePiece = (id: string) => {
-    setEntries((current) => current.filter((entry) => entry.id !== id));
+    removeLibraryEntry(id);
     setSelectedId((current) => (current === id ? null : current));
   };
 
@@ -429,9 +428,7 @@ export default function Library() {
       stage: draft.stage,
       saved: false,
     };
-    setEntries((current) => [piece, ...current]);
-    // Adding a piece is a real action — record it exactly once per session.
-    recordLibraryPieceAdded();
+    addLibraryEntry(piece);
     setAdding(false);
     setSelectedId(piece.id);
   };
@@ -606,7 +603,7 @@ export default function Library() {
               entry={selected}
               currentStage={journey.currentStage}
               onBack={() => setSelectedId(null)}
-              onToggleSave={toggleSave}
+              onToggleSave={toggleLibraryEntrySaved}
               onRemove={removePiece}
             />
           </div>
@@ -689,7 +686,7 @@ export default function Library() {
                       entry={entry}
                       currentStage={journey.currentStage}
                       onOpen={setSelectedId}
-                      onToggleSave={toggleSave}
+                      onToggleSave={toggleLibraryEntrySaved}
                     />
                   ))}
                 </div>
