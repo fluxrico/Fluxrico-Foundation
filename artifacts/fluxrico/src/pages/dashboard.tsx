@@ -60,12 +60,12 @@ export default function Dashboard() {
                 stage={journey.currentStageInfo}
                 stageIndex={journey.stageIndex}
                 stageTotal={journey.stageTotal}
-                progressPercent={journey.stagePercent}
+                progressPercent={journey.progressPercent}
                 navigatorComplete={journey.hasNavigatorData}
                 onContinue={openStage}
               />
               <div id="roadmap">
-                <RoadmapProgress currentStage={journey.currentStage} />
+                <RoadmapProgress currentStage={journey.currentStage} completedStages={journey.completedStages} />
               </div>
             </div>
 
@@ -77,6 +77,7 @@ export default function Dashboard() {
                 status={journey.status}
                 stageIndex={journey.stageIndex}
                 stageTotal={journey.stageTotal}
+                progressPercent={journey.progressPercent}
                 onEdit={() => setLocation('/profile')}
               />
             </div>

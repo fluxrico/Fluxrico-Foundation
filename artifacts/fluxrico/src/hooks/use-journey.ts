@@ -1,12 +1,11 @@
 import { useMemo } from 'react';
 import {
   JOURNEY,
-  NAVIGATOR_QUESTION_KEYS,
   ROADMAP_STAGES,
   buildNavigatorResult,
   getStageIndex,
   isNavigatorComplete,
-  stageProgress,
+  journeyProgress,
   type JourneyActivity,
   type JourneyStatus,
   type NavigatorResultData,
@@ -19,7 +18,7 @@ import { useWorkspaceState } from '@/lib/workspace-state';
 // One coherent view of the user's journey. When Navigator answers exist they
 // personalize the journey; otherwise the base journey applies. Every surface
 // (Dashboard, Roadmap, Profile, Navigator result) reads from here so there is
-// exactly one source of truth for stage, next move, and progress.
+// exactly one source of truth for stage, completion, and progress.
 export type JourneyView = {
   profile: typeof JOURNEY.profile;
   status: JourneyStatus;
@@ -30,7 +29,9 @@ export type JourneyView = {
   direction: string | null;
   stageIndex: number;
   stageTotal: number;
-  stagePercent: number;
+  /** Honest completion percent: real completed stages / total, from journeyProgress. */
+  progressPercent: number;
+  /** Stages completed through real work — the single completion source. */
   completedStages: RoadmapStageName[];
   recentActivity: JourneyActivity[];
   hasNavigatorData: boolean;
@@ -39,7 +40,7 @@ export type JourneyView = {
 
 export function useJourney(): JourneyView {
   const { answers } = useNavigatorState();
-  const { realActivity, hasRealActivity } = useWorkspaceState();
+  const { realActivity, hasRealActivity, completedStages } = useWorkspaceState();
 
   return useMemo(() => {
     // Navigator is complete only when every required question has an answer;
@@ -49,8 +50,12 @@ export function useJourney(): JourneyView {
 
     const currentStage = navigatorResult?.currentStage ?? JOURNEY.currentStage;
     const stageIndex = getStageIndex(currentStage);
-    const progress = stageProgress(currentStage);
     const currentStageInfo = ROADMAP_STAGES[stageIndex];
+
+    // The one progress calculation in the workspace: only stages completed
+    // through real work count. Being on a stage contributes nothing — a user
+    // standing on Stage 01 with nothing completed is at 0%, not 17%.
+    const progress = journeyProgress(completedStages);
 
     // Real events recorded this session lead the feed; the sample entries
     // (marked sample: true) follow as clearly-labeled examples, and only until
@@ -65,13 +70,13 @@ export function useJourney(): JourneyView {
       currentStageInfo,
       nextMove: navigatorResult?.nextMove ?? currentStageInfo.nextMove,
       direction: navigatorResult?.direction ?? null,
-      stageIndex: progress.index,
+      stageIndex,
       stageTotal: progress.total,
-      stagePercent: progress.percent,
-      completedStages: progress.completed,
+      progressPercent: progress.percent,
+      completedStages,
       recentActivity,
       hasNavigatorData,
       navigatorResult,
     };
-  }, [answers, realActivity, hasRealActivity]);
+  }, [answers, realActivity, hasRealActivity, completedStages]);
 }

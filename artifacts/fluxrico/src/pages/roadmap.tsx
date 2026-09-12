@@ -53,12 +53,12 @@ export default function Roadmap() {
 
         {/* Level 1 — the journey map: all six stages, current one emphasized. */}
         <div className="fluxrico-rise fluxrico-rise-delay-1 mt-9">
-          <RoadmapJourneyMap currentStage={journey.currentStage} activeStage={currentStage} />
+          <RoadmapJourneyMap currentStage={journey.currentStage} activeStage={currentStage} completedStages={journey.completedStages} />
         </div>
 
         {/* Level 2 — the selected stage beside its next move. */}
         <div className="fluxrico-rise fluxrico-rise-delay-2 mt-5 grid gap-5 lg:grid-cols-[1.35fr_0.65fr]">
-          <RoadmapStageDetail currentStage={journey.currentStage} activeStage={currentStage} />
+          <RoadmapStageDetail currentStage={journey.currentStage} activeStage={currentStage} completedStages={journey.completedStages} />
 
           <div className="flex flex-col gap-5">
             <NextMoveCard
@@ -92,7 +92,7 @@ export default function Roadmap() {
                   <span className="text-[#6258D0]">{stageIndex + 1} of {ROADMAP_STAGES.length}</span>
                 </div>
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#ECECF6]">
-                  <div className="h-full rounded-full bg-gradient-to-r from-[#16C5E9] to-[#6857E8] transition-[width] duration-500" style={{ width: `${((stageIndex + 1) / ROADMAP_STAGES.length) * 100}%` }} />
+                  <div className="h-full rounded-full bg-gradient-to-r from-[#16C5E9] to-[#6857E8] transition-[width] duration-500" style={{ width: `${journey.progressPercent}%` }} />
                 </div>
               </div>
               <p className="mt-4 border-t border-[#ECECF1] pt-4 text-xs leading-5 text-[#8587A3]">

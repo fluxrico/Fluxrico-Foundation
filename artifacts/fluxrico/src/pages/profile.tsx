@@ -158,7 +158,7 @@ function OverviewTab() {
             Open {journey.currentStage} <ArrowRight size={13} strokeWidth={2.2} />
           </Link>
           <span className="text-xs font-semibold text-[#9A9CB3]">
-            Stage {journey.currentStageInfo.number} · {journey.stagePercent}% of the path
+            Stage {journey.currentStageInfo.number} · {journey.progressPercent}% of the path
           </span>
         </div>
       </section>
@@ -168,7 +168,7 @@ function OverviewTab() {
 
 // ── Journey tab ──────────────────────────────────────────────────────────────
 
-function JourneyTab({ currentStage, stagePercent }: { currentStage: RoadmapStageName; stagePercent: number }) {
+function JourneyTab({ currentStage, progressPercent, completedStages }: { currentStage: RoadmapStageName; progressPercent: number; completedStages: RoadmapStageName[] }) {
   const currentIndex = getStageIndex(currentStage);
   const guide = ROADMAP_STAGE_GUIDES[currentIndex];
   const currentInfo = ROADMAP_STAGES[currentIndex];
@@ -187,7 +187,11 @@ function JourneyTab({ currentStage, stagePercent }: { currentStage: RoadmapStage
         </h2>
         <ol className="mt-6 space-y-2.5">
           {ROADMAP_STAGES.map((stage, index) => {
-            const state = index < currentIndex ? 'complete' : index === currentIndex ? 'current' : 'upcoming';
+            const state = completedStages.includes(stage.name)
+              ? 'complete'
+              : index === currentIndex
+                ? 'current'
+                : 'upcoming';
             return (
               <li key={stage.name} data-testid={`profile-stage-${stage.name.toLowerCase()}`}>
                 <Link
@@ -281,7 +285,7 @@ function JourneyTab({ currentStage, stagePercent }: { currentStage: RoadmapStage
         >
           <CardLabel icon={Target}>PROGRESS</CardLabel>
           <div className="mt-5 flex items-end justify-between gap-3">
-            <p className="text-3xl font-extrabold tracking-[-0.05em] text-[#28295D]">{stagePercent}%</p>
+            <p className="text-3xl font-extrabold tracking-[-0.05em] text-[#28295D]">{progressPercent}%</p>
             <p className="pb-1 text-sm font-semibold text-[#4F48C5]">
               Stage {currentIndex + 1} of {ROADMAP_STAGES.length}
             </p>
@@ -289,14 +293,14 @@ function JourneyTab({ currentStage, stagePercent }: { currentStage: RoadmapStage
           <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/80">
             <div
               className="h-full rounded-full bg-[#6857E8] transition-[width] duration-500"
-              style={{ width: `${stagePercent}%` }}
+              style={{ width: `${progressPercent}%` }}
               data-testid="progress-profile-journey"
             />
           </div>
           <p className="mt-4 text-xs leading-5 text-[#727596]">
-            {currentIndex === 0
-              ? 'The path begins here — one small move starts it.'
-              : `${currentIndex} stage${currentIndex === 1 ? '' : 's'} behind you. The next one starts with one small move.`}
+            {completedStages.length === 0
+              ? 'No stages completed yet — one small move starts the path.'
+              : `${completedStages.length} stage${completedStages.length === 1 ? '' : 's'} completed so far. The next one starts with one small move.`}
           </p>
         </section>
       </div>
@@ -472,7 +476,7 @@ export default function Profile() {
               JOURNEY STATUS
             </div>
             <p className="text-sm font-semibold text-[#4F48C5]">
-              {journey.stageIndex + 1} of {journey.stageTotal} stages · {journey.stagePercent}%
+              {journey.stageIndex + 1} of {journey.stageTotal} stages · {journey.progressPercent}%
             </p>
           </div>
           <div className="mt-4 grid gap-5 sm:grid-cols-2 sm:items-center">
@@ -491,7 +495,7 @@ export default function Profile() {
           <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/80">
             <div
               className="h-full rounded-full bg-[#6857E8] transition-[width] duration-500"
-              style={{ width: `${journey.stagePercent}%` }}
+              style={{ width: `${journey.progressPercent}%` }}
               data-testid="progress-profile-status"
             />
           </div>
@@ -526,7 +530,13 @@ export default function Profile() {
 
         <div className="fluxrico-rise fluxrico-rise-delay-2 mt-5">
           {tab === 'overview' && <OverviewTab />}
-          {tab === 'journey' && <JourneyTab currentStage={journey.currentStage} stagePercent={journey.stagePercent} />}
+          {tab === 'journey' && (
+            <JourneyTab
+              currentStage={journey.currentStage}
+              progressPercent={journey.progressPercent}
+              completedStages={journey.completedStages}
+            />
+          )}
           {tab === 'activity' && <ActivityTab activity={journey.recentActivity} />}
         </div>
 

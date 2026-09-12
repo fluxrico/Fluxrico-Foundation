@@ -230,14 +230,15 @@ export type Journey = {
   status: JourneyStatus;
   currentStage: RoadmapStageName;
   goal: string;
-  goalProgress: number; // 0..100
-  completedStages: RoadmapStageName[];
   recentActivity: JourneyActivity[];
 };
 
 /**
  * The demo journey. In a real backend this would come from the user record;
  * for now it is the one coherent frontend-only state every surface reads.
+ *
+ * It carries no completion state: a stage is completed only by real work
+ * recorded in lib/workspace-state, never by this fixture.
  *
  * recentActivity is sample content: it shows the shape of the feed for a new
  * user and is marked `sample: true` so UI can label it as such. Real session
@@ -253,8 +254,6 @@ export const JOURNEY: Journey = {
   status: 'in-progress',
   currentStage: 'Shape',
   goal: 'Build and launch a digital product',
-  goalProgress: 33,
-  completedStages: ['Start'],
   recentActivity: [
     {
       id: 'navigator',
@@ -280,20 +279,25 @@ export const JOURNEY: Journey = {
   ],
 };
 
-export function stageProgress(currentStage: RoadmapStageName): {
-  index: number;
+/**
+ * The one progress calculation for the whole workspace. A stage counts toward
+ * progress only when it is in `completedStages` — reaching a stage never
+ * completes it. Percent is honest, stage-based completion:
+ * round(completed / total * 100), clamped to 0..100.
+ *
+ * `completedStages` is the single source of truth, derived from real session
+ * events in lib/workspace-state; every surface (Dashboard, Roadmap, Profile)
+ * reads the result from useJourney.
+ */
+export function journeyProgress(completedStages: readonly RoadmapStageName[]): {
   total: number;
+  completedCount: number;
   percent: number;
-  completed: RoadmapStageName[];
 } {
-  const index = getStageIndex(currentStage);
-  const completed = ROADMAP_STAGES.slice(0, index).map((stage) => stage.name);
-  return {
-    index,
-    total: ROADMAP_STAGES.length,
-    percent: Math.round(((index + 1) / ROADMAP_STAGES.length) * 100),
-    completed,
-  };
+  const total = ROADMAP_STAGES.length;
+  const completedCount = new Set(completedStages).size;
+  const percent = Math.max(0, Math.min(100, Math.round((completedCount / total) * 100)));
+  return { total, completedCount, percent };
 }
 
 // ── Navigator ────────────────────────────────────────────────────────────────

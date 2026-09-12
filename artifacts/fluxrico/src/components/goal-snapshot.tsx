@@ -6,6 +6,8 @@ type GoalSnapshotProps = {
   status: JourneyView['status'];
   stageIndex: number;
   stageTotal: number;
+  /** Honest completion percent from the shared journey source. */
+  progressPercent: number;
   onEdit: () => void;
 };
 
@@ -15,9 +17,7 @@ const STATUS_LABEL: Record<GoalSnapshotProps['status'], string> = {
   growing: 'Growing',
 };
 
-export function GoalSnapshot({ goal, status, stageIndex, stageTotal, onEdit }: GoalSnapshotProps) {
-  const percent = Math.round(((stageIndex + 1) / stageTotal) * 100);
-
+export function GoalSnapshot({ goal, status, stageIndex, stageTotal, progressPercent, onEdit }: GoalSnapshotProps) {
   return (
     <section className="dashboard-card-lift rounded-[1.65rem] border border-[#DADBF0] bg-[#F1F2FD] p-6 sm:p-7" aria-labelledby="goal-title" data-testid="card-goal-snapshot">
       <div className="flex items-start justify-between gap-4">
@@ -40,7 +40,7 @@ export function GoalSnapshot({ goal, status, stageIndex, stageTotal, onEdit }: G
           <p className="mt-1 text-sm font-bold text-[#8587A3]">{stageIndex + 1} of {stageTotal} stages</p>
         </div>
       </div>
-      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/80"><div className="h-full rounded-full bg-[#6857E8] transition-[width] duration-500" style={{ width: `${percent}%` }} /></div>
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/80"><div className="h-full rounded-full bg-[#6857E8] transition-[width] duration-500" style={{ width: `${progressPercent}%` }} /></div>
     </section>
   );
 }
