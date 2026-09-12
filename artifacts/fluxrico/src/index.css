@@ -702,3 +702,355 @@
   color: hsl(var(--landing-body));
 }
 
+/* ── Workspace appearance (light / dark / automatic) ────────────────────────
+   The Appearance setting resolves through the existing landing theme store,
+   which mirrors the choice onto <html> as `ws-dark`. This layer presents the
+   workspace's fixed utility colors in dark values. Navy surfaces that are
+   already dark (sidebar, hero panels) keep their authored colors, so light
+   text on them is never remapped. Every rule is gated on `html.ws-dark:not(:has(.landing-root, .auth-root))`, so
+   light mode renders byte-identical to before. */
+
+html.ws-dark:not(:has(.landing-root, .auth-root)) {
+  --ws-paper: #10122f;
+  --ws-card: #161940;
+  --ws-card-2: #1b1f4d;
+  --ws-tint: #20245c;
+  --ws-line: #2c3068;
+  --ws-line-strong: #3b3f7e;
+  --ws-ink: #e6e7fb;
+  --ws-ink-strong: #f3f3ff;
+  --ws-ink-soft: #babdf0;
+  --ws-ink-muted: #9ea2d4;
+  --ws-ink-faint: #8388c0;
+  --ws-cyan-ink: #62d3ee;
+  --ws-accent-soft: #23285f;
+  --ws-accent-softer: #1e2356;
+  --ws-navy-hover: #3b3f85;
+  --ws-card-raised: #1d214f;
+}
+
+html.ws-dark:not(:has(.landing-root, .auth-root)) body {
+  background: #10122f;
+  color: #e6e7fb;
+}
+
+/* Type ramp — remapped only on light surfaces. */
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#191A4D\] { color: var(--ws-ink-strong); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#202155\] { color: var(--ws-ink-strong); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#25265A\] { color: var(--ws-ink-strong); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#27285C\] { color: var(--ws-ink-strong); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#28295D\] { color: var(--ws-ink-strong); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#282961\] { color: var(--ws-ink-strong); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#29266D\] { color: var(--ws-ink-strong); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#292960\] { color: var(--ws-ink-strong); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#2A2A68\] { color: var(--ws-ink-strong); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#302974\] { color: var(--ws-ink-strong); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#302B79\] { color: #dcd9ff; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#303263\] { color: #d7d8ff; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#332E9E\] { color: var(--ws-cyan-ink); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#342D83\] { color: #cfcfff; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#343568\] { color: var(--ws-ink-strong); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#37386B\] { color: #c9cbf5; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#37396B\] { color: #c9cbf5; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#383777\] { color: #d7d7ff; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#3A3B6C\] { color: #c6c8f2; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#3D3486\] { color: #d4cdff; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#3E3C88\] { color: #cfd2ff; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#454778\] { color: #b9bce9; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#4A4C7A\] { color: #b6b9e8; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#4B4D76\] { color: #b4b7e6; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#4E5180\] { color: #b3b6e7; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#565980\] { color: #b0b3e4; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#5753A5\] { color: #b6b3f0; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#5D6082\] { color: #adb1e2; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#626486\] { color: #a9adde; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#65678B\] { color: #a7abdc; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#66698B\] { color: #a5a9da; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#686B8D\] { color: #a3a7d8; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#6B6D8D\] { color: #a1a5d6; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#6B6E91\] { color: #a1a5d6; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#6E7192\] { color: #9fa3d4; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#7183A2\] { color: #a8c2e0; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#727596\] { color: #9ca0d2; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#737696\] { color: #9ca0d2; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#747696\] { color: #9ca0d2; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#76789A\] { color: #9a9ed0; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#777998\] { color: #999dcf; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#7779A1\] { color: #999dcf; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#7A7D9C\] { color: #979bd0; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#7B7E9C\] { color: #979bd0; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#7E82B3\] { color: #969acf; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#8186B9\] { color: #9498ce; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#8385A1\] { color: #9296cd; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#8587A3\] { color: var(--ws-ink-muted); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#8587AD\] { color: #9094cb; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#888AA4\] { color: var(--ws-ink-muted); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#888BA8\] { color: #8f93c8; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#8A8CAD\] { color: var(--ws-ink-soft); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#8B8DAB\] { color: #8d91c6; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#9597AF\] { color: #9397cd; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#999BB1\] { color: #8f93c8; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#9A9CB3\] { color: var(--ws-ink-faint); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#9B9DB5\] { color: #8c90c5; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#A0A2B7\] { color: var(--ws-ink-faint); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#A6A8C3\] { color: #8a8ec3; }
+
+/* Cyan brand inks. */
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#1399B3\] { color: #4fc9e0; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#14C6EC\] { color: var(--ws-cyan-ink); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#159BB5\] { color: #4fc9e0; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#15B9DB\] { color: #56cee8; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#167D8D\] { color: #6fd0dd; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#168BA5\] { color: #6fd0dd; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#16C5E9\] { color: var(--ws-cyan-ink); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#178EAD\] { color: #6fd0dd; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#217887\] { color: #79d0dc; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#267A8D\] { color: #79d0dc; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#38567B\] { color: #a9c6e8; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#3D7EA6\] { color: #8fc2de; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#527C83\] { color: #7fd0d8; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#5CD8F3\] { color: #70d8f0; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#6CE0F4\] { color: #7fdef2; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#85DDED\] { color: #8fdfee; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#86DFF3\] { color: #8fdfee; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#8DDEF0\] { color: #9bdcee; }
+
+/* Purple accent inks. */
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#4A3AD2\] { color: #9c8ff5; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#4A43A3\] { color: #a9a2f2; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#4E46C0\] { color: #a49cf3; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#4F48C5\] { color: #a49cf3; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#5147C2\] { color: #a79ff4; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#5B56B5\] { color: #aba6f0; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#5D53C2\] { color: #b0a9f5; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#5D56C9\] { color: #b0a9f5; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#6256DB\] { color: #b4a8f8; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#6258D0\] { color: #b4a8f8; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#635AD0\] { color: #b4a8f8; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#655BD0\] { color: #b4a8f8; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#6857E8\] { color: #b9a9fb; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#6861C8\] { color: #b5b0f5; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#6A5BE2\] { color: #bcaefb; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#7068D0\] { color: #b9b0f8; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#7A70CF\] { color: #beb4f8; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#8B8DDA\] { color: #a6a9ec; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#8B8FD8\] { color: #a6a9ec; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#8F87D6\] { color: #aaa3ef; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#C98B8B\] { color: #e0a8a8; }
+
+/* Slate muted inks on light surfaces. */
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#45658A\] { color: #a3b3cd; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#6264A0\] { color: #a9adde; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#6B63B8\] { color: #b0b4ec; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#6E72A5\] { color: #a9adde; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#777A99\] { color: #9ca0d2; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#797C9A\] { color: #9ca0d2; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#8085BA\] { color: #a2a6dc; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#8B90C0\] { color: #9fa3d4; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#8C8FAB\] { color: #9ca0d2; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#9398C5\] { color: #9ca0d2; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#969BCB\] { color: #999dd0; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#9FA5CE\] { color: #979bd0; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#9FA7D7\] { color: #969acf; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#B4B6CE\] { color: #8f93c8; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#B9BBD3\] { color: #8f93c8; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#C4C6DC\] { color: #979bd0; }
+
+/* Warm warning / destructive inks. */
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#9A6414\] { color: #d9a05f; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#B0651F\] { color: #d9a05f; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#C77E1B\] { color: #e0ab6b; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#7A6464\] { color: #c39898; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#A05B5B\] { color: #d99090; }
+
+/* Base surfaces: paper, cards, wells and inputs. */
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#FAFAFE\] { background-color: var(--ws-card); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#FAFAFD\] { background-color: var(--ws-card); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#F8F8FD\] { background-color: #12142f; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#F8F8FD\]\/90 { background-color: rgba(14, 16, 40, 0.92); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#F7FAFE\] { background-color: var(--ws-card); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#F7F6FF\] { background-color: var(--ws-card); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#F6F7FF\] { background-color: var(--ws-paper); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#F4FCFD\] { background-color: var(--ws-card); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#F4F4FB\] { background-color: var(--ws-card); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#F4F4FC\] { background-color: var(--ws-card); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#F2F1FF\] { background-color: var(--ws-card-2); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#F1FAFA\] { background-color: var(--ws-card); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#F1F2FD\] { background-color: var(--ws-card-2); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#F1F2FF\] { background-color: var(--ws-card-2); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#F1F1F8\] { background-color: var(--ws-card); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#F1EFFF\] { background-color: var(--ws-accent-softer); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#F1EFFE\] { background-color: var(--ws-accent-soft); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#F0F8FF\] { background-color: #142238; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#F0EEFF\] { background-color: var(--ws-accent-soft); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#F0EFFF\] { background-color: var(--ws-accent-soft); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#EDEBFD\] { background-color: var(--ws-accent-soft); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#EDEBFC\] { background-color: var(--ws-accent-soft); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#E9EAFB\] { background-color: var(--ws-accent-softer); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#E5E5F1\] { background-color: var(--ws-line); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#E5E1FF\] { background-color: var(--ws-accent-soft); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#E2F8FC\] { background-color: var(--ws-accent-softer); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#E1DEFF\] { background-color: var(--ws-accent-soft); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#E0F9FC\] { background-color: #12293a; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#E4F9FC\] { background-color: #12293a; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#D9F5FA\] { background-color: #122a3c; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#DCD9FF\] { background-color: var(--ws-accent-soft); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#D2F3F9\] { background-color: #143044; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#CDEFF1\] { background-color: #14303c; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#ECECF6\] { background-color: var(--ws-tint); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#ECECF1\] { background-color: var(--ws-line); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#ECECF3\] { background-color: var(--ws-line); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#B9B2EE\] { background-color: #4a3f96; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#BFC0D3\] { background-color: #3a3d72; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#C4C6DC\] { background-color: #3a3d72; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#C3C5D6\] { background-color: #3a3d72; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#D8D9E9\] { background-color: var(--ws-line); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#DEDFEF\] { background-color: var(--ws-tint); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-white { background-color: var(--ws-card); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .hover\:bg-white:hover { background-color: var(--ws-card); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .focus\:bg-white:focus { background-color: var(--ws-card); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-white\/80 { background-color: var(--ws-card); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-white\/70 { background-color: rgba(27, 31, 77, 0.72); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-white\/55 { background-color: rgba(27, 31, 77, 0.6); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .hover\:bg-white\/60:hover { background-color: rgba(27, 31, 77, 0.55); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .from-white { --tw-gradient-from: var(--ws-card-2); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .to-\[\#F4F4FC\] { --tw-gradient-to: var(--ws-card-2); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .from-\[\#F1EFFF\] { --tw-gradient-from: var(--ws-accent-softer); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .to-\[\#ECE9FF\] { --tw-gradient-to: var(--ws-accent-soft); }
+
+/* Accent buttons and warm tints. */
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#EBE9FF\] { background-color: var(--ws-accent-soft); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#F4F3FF\] { background-color: var(--ws-accent-soft); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#FDF3E7\] { background-color: #2e2417; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#FBF4E7\] { background-color: #2e2417; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#F7ECD7\] { background-color: #3a2d1b; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .bg-\[\#8E90A8\] { background-color: #4c4f75; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .text-\[\#B4B1E4\] { color: var(--ws-cyan-ink); }
+
+/* ── Reduced Motion (Settings) ──────────────────────────────────────────────
+   The class mirrors settings.reducedMotion from the workspace store. Only
+   non-essential decoration is paused; opacity transitions that convey state
+   still run. */
+.ws-reduced .fluxrico-rise,
+.ws-reduced .fluxrico-drift,
+.ws-reduced .fluxrico-drift-slow {
+  animation: none;
+}
+
+.ws-reduced .navigator-progress-node,
+.ws-reduced .dashboard-sidebar-scroll,
+.ws-reduced [class*="transition-"] {
+  transition-duration: 1ms !important;
+}
+
+.ws-reduced .hover\:-translate-y-0\.5:hover,
+.ws-reduced .hover\:-translate-y-1:hover {
+  transform: none;
+}
+
+.ws-reduced .transition-\[width\],
+.ws-reduced [style*="transition"] {
+  transition-duration: 1ms !important;
+}
+
+/* ── Compact Mode (Settings) ───────────────────────────────────────────────
+   The class mirrors settings.compactMode. Density trims only: paddings,
+   gaps and caps, so hierarchy and content are untouched. */
+.ws-compact main {
+  padding-top: 1.25rem;
+  padding-bottom: 2.5rem;
+}
+
+.ws-compact header.min-h-\[5\.4rem\] {
+  min-height: 4.25rem;
+}
+
+.ws-compact .dashboard-sidebar-scroll {
+  padding-top: 1.25rem;
+  padding-bottom: 1.25rem;
+}
+
+.ws-compact .dashboard-sidebar-scroll nav {
+  margin-top: 0.5rem;
+}
+
+.ws-compact .dashboard-sidebar-scroll .min-h-12 {
+  min-height: 2.6rem;
+}
+
+/* Tighten generous page paddings without collapsing them. */
+.ws-compact .p-6:not(header *):not(nav *) {
+  padding: 1.1rem;
+}
+
+.ws-compact .sm\:p-8 {
+  padding: 1.1rem;
+}
+
+@media (min-width: 640px) {
+  .ws-compact .sm\:p-8 {
+    padding: 1.4rem;
+  }
+  .ws-compact .sm\:px-8 {
+    padding-left: 1.75rem;
+    padding-right: 1.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .ws-compact .lg\:px-10 {
+    padding-left: 2.25rem;
+    padding-right: 2.25rem;
+  }
+  .ws-compact .lg\:py-12 {
+    padding-top: 2.25rem;
+    padding-bottom: 2.25rem;
+  }
+}
+
+/* Tighten common vertical rhythm utilities. */
+.ws-compact .space-y-6 > :not([hidden]) ~ :not([hidden]),
+.ws-compact .space-y-8 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 1.1rem;
+}
+
+.ws-compact .mt-8,
+.ws-compact .mt-10,
+.ws-compact .mt-12 {
+  margin-top: 1.5rem;
+}
+
+/* Cards with internal grids get slightly tighter gutters. */
+.ws-compact [data-testid*="card"] .grid {
+  gap: 0.7rem;
+}
+
+/* Hairlines, borders and dividers. */
+html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#DADBF0\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#DADBEA\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#D4D5E8\],
+html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#ECECF1\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#ECECF3\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#E0E1F0\],
+html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#DDDEEC\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#DCDDED\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#D5D6E8\],
+html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#D8D9E9\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#E4E4EF\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#E4E4F4\],
+html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#E3E4F2\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#E0E1ED\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#DCDDEA\],
+html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#D7D9EA\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#C3C5DE\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#E9E9F4\],
+html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#E4E9F6\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#E4E5F0\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#E3E4F1\],
+html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#E0E2F2\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#DEDEF0\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#DDDDF0\],
+html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#DCDDF0\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#D5D4F0\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#D2D3E6\],
+html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#CFD1E4\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#CDCFE2\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#C7C9E5\] { border-color: var(--ws-line); }
+
+html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#C98B8B\] { border-color: #8a5252; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#E7D9D9\] { border-color: #5c3a3a; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#C9D9F0\] { border-color: #2b4a6b; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#D8E8EA\] { border-color: #1f3a45; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#CFCCF6\] { border-color: #3f3a80; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#C9C4F0\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#B9B7E8\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#B9B5EC\],
+html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#B7B2E6\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#B4ABF0\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#A5A0DC\],
+html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#AAA5E5\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#8E88E1\] { border-color: #46428f; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#6256DB\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#6A5BE2\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#6B5CE7\],
+html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#6857E8\], html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#5D53C2\] { border-color: var(--ws-navy-hover); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#16C5E9\] { border-color: #1899c2; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#62D9F3\] { border-color: #2aa8cc; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .border-\[\#B9E9F2\] { border-color: #1f4a56; }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .divide-\[\#ECECF3\] > :not([hidden]) ~ :not([hidden]),
+html.ws-dark:not(:has(.landing-root, .auth-root)) .divide-\[\#ECECF1\] > :not([hidden]) ~ :not([hidden]) { border-color: var(--ws-line); }
+html.ws-dark:not(:has(.landing-root, .auth-root)) .decoration-\[\#C7C8DB\] { -webkit-text-decoration-color: #565a8c; text-decoration-color: #565a8c; }
+
