@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { CheckCircle2, ChevronLeft, ChevronRight, Compass, ListChecks, Lightbulb, CircleDot } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, ChevronRight, CircleCheck, Compass, ListChecks, Lightbulb, CircleDot } from 'lucide-react';
 import { Link } from 'wouter';
 import {
   ROADMAP_STAGE_GUIDES,
@@ -14,6 +14,8 @@ type RoadmapStageDetailProps = {
   activeStage: RoadmapStageName;
   /** Stages completed through real work — shared source, not index-derived. */
   completedStages: readonly RoadmapStageName[];
+  /** Confirms the stage's definition of done is met — a real user action. */
+  onComplete: (stage: RoadmapStageName) => void;
 };
 
 /** One small labeled block inside the stage detail. */
@@ -44,7 +46,7 @@ function DetailBlock({
  * DEFINITION OF DONE → NEXT MOVE. Roadmap is an action system, so every
  * section is concrete and specific to the selected stage.
  */
-export function RoadmapStageDetail({ currentStage, activeStage, completedStages }: RoadmapStageDetailProps) {
+export function RoadmapStageDetail({ currentStage, activeStage, completedStages, onComplete }: RoadmapStageDetailProps) {
   const stageIndex = getStageIndex(activeStage);
   const stage: RoadmapStageInfo = ROADMAP_STAGES[stageIndex];
   const guide = ROADMAP_STAGE_GUIDES[stageIndex];
@@ -132,6 +134,33 @@ export function RoadmapStageDetail({ currentStage, activeStage, completedStages 
               Definition of done
             </p>
             <p className="mt-2 text-sm leading-6 text-[#45658A]">{guide.done}</p>
+            {/*
+              The one completion action in the product: confirming the stage's
+              definition of done. Completing records a real event — opening or
+              viewing a stage never does. Already-completed stages show an
+              honest confirmation instead of a repeatable button.
+            */}
+            {isCompleted ? (
+              <p className="mt-3 flex items-center gap-2 text-[0.62rem] font-bold uppercase tracking-[0.13em] text-[#5D53C2]">
+                <CircleCheck size={15} strokeWidth={2} />
+                Marked complete from real work
+              </p>
+            ) : (
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={() => onComplete(activeStage)}
+                  className="fluxrico-focus inline-flex min-h-10 items-center gap-2 rounded-full bg-[#EBE9FF] px-4 text-[0.62rem] font-bold uppercase tracking-[0.13em] text-[#5147C2] transition-colors hover:bg-[#E1DEFF]"
+                  data-testid={`button-complete-stage-${activeStage.toLowerCase()}`}
+                >
+                  <CircleCheck size={15} strokeWidth={2} />
+                  Mark {stage.name} complete
+                </button>
+                <p className="mt-2 text-[0.66rem] leading-5 text-[#7B8DA8]">
+                  Only mark this when the definition of done above is genuinely met.
+                </p>
+              </div>
+            )}
           </div>
         </DetailBlock>
       </div>
