@@ -193,6 +193,75 @@ export const ROADMAP_STAGES: readonly RoadmapStageInfo[] = [
   },
 ] as const;
 
+// ── Next Move briefs ─────────────────────────────────────────────────────────
+
+/**
+ * The full actionable brief behind one stage's next move. Where the guide
+ * covers the whole stage (goal, tasks, guidance), the brief answers the four
+ * questions the user needs to actually move: WHAT (action), WHY it matters,
+ * HOW to do it, and WHEN it is done. Indexed by position in ROADMAP_STAGES —
+ * never redefine stage content anywhere else.
+ */
+export type NextMoveBrief = {
+  title: string;
+  action: string;
+  why: string;
+  how: string;
+  done: string;
+};
+
+/** Per-stage next move brief, aligned one-to-one with ROADMAP_STAGES. */
+export const NEXT_MOVE_BRIEFS: readonly NextMoveBrief[] = [
+  {
+    title: 'Name your starting point',
+    action: 'Write down the one idea, skill, or project you want to move forward with.',
+    why: 'A written starting point survives busy weeks — an unwritten one fades. Naming one thing gives the journey its direction.',
+    how: 'Pick the one thing with real energy behind it, write it in a single clear sentence, and say it out loud to check it makes sense.',
+    done: 'You can name your starting point in one sentence you would be comfortable saying to someone else.',
+  },
+  {
+    title: 'Define who you want to help',
+    action: 'Write a one-sentence description of the person you want to help and the problem they have.',
+    why: 'A clear person and problem give the idea a focused direction — every later decision gets easier instead of harder.',
+    how: 'Describe the person, their situation, and the problem in one simple sentence. Use their words, not product words.',
+    done: 'You can describe the person and their problem clearly in one sentence.',
+  },
+  {
+    title: 'Take one real step toward the problem',
+    action: 'Have one honest conversation with someone who matches the person you want to help.',
+    why: 'One small real step beats a plan that never touches ground — real contact tests the direction better than more thinking.',
+    how: 'Reach out to one person close to the problem, ask about their situation, and note what surprised you.',
+    done: 'You have spoken with one real person about their problem and can name one thing you learned.',
+  },
+  {
+    title: 'Create the smallest useful version of your offer',
+    action: 'Build a simple first version that delivers the core value to one person.',
+    why: 'An offer is the moment the idea becomes useful to someone else — a real thing can be tried, judged, and improved.',
+    how: 'Decide the one promise your offer makes, build only what that promise needs, and try it yourself end to end.',
+    done: 'A first version exists that another person could get value from without your help.',
+  },
+  {
+    title: 'Share your work with the first people',
+    action: 'Put the offer in front of the first people who might want it, with a clear way to respond.',
+    why: 'Real feedback only exists on the other side of sharing — response, even a small one, beats a perfect launch imagined alone.',
+    how: 'Write one short post or message that says what it is, who it is for, and what to do next — then share it where those people are.',
+    done: 'The offer is live with real people and you have captured at least one piece of real response.',
+  },
+  {
+    title: 'Do more of what is working',
+    action: 'Review the response you have, pick the one thing that worked, and repeat it deliberately.',
+    why: 'Small improvements compound faster than occasional reinventions — growth becomes a rhythm instead of an event.',
+    how: 'Look at what people actually used and said, choose the strongest pattern, and plan one concrete way to do more of it.',
+    done: 'You have one confirmed improvement or channel working, and a repeatable way to keep using it.',
+  },
+] as const;
+
+/** The next move brief for a stage, found by stage name (null if unknown). */
+export function getStageNextMove(stage: RoadmapStageName): NextMoveBrief | null {
+  const index = getStageIndex(stage);
+  return index === -1 ? null : NEXT_MOVE_BRIEFS[index];
+}
+
 export function getStageIndex(name: RoadmapStageName): number {
   return ROADMAP_STAGES.findIndex((stage) => stage.name === name);
 }

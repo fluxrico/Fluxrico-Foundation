@@ -1,6 +1,6 @@
 import { Check, Map as MapIcon, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Link, useSearch } from 'wouter';
+import { Link, useLocation, useSearch } from 'wouter';
 import { AppShell } from '@/components/app-shell';
 import { NextMoveCard } from '@/components/next-move-card';
 import { RoadmapJourneyMap } from '@/components/roadmap-journey-map';
@@ -11,9 +11,10 @@ import { useWorkspaceState } from '@/lib/workspace-state';
 
 export default function Roadmap() {
   const search = useSearch();
+  const [, setLocation] = useLocation();
   // Starting the next move and completing a stage record real events;
   // everything else here is unchanged.
-  const { recordNextMoveStarted, recordStageCompleted } = useWorkspaceState();
+  const { recordNextMoveStarted, recordStageCompleted, hasStartedNextMove } = useWorkspaceState();
   const journey = useJourney();
   const [notice, setNotice] = useState<string | null>(null);
   const noticeTimer = useRef<number | null>(null);
@@ -33,12 +34,31 @@ export default function Roadmap() {
   const stageIndex = getStageIndex(currentStage);
   const stageInfo = ROADMAP_STAGES[stageIndex];
   const isCurrentStage = currentStage === journey.currentStage;
+  // Only real completion flips the move card into its completed state.
+  const isCurrentStageCompleted = journey.completedStages.includes(currentStage);
 
   // Completing a stage is a real user action: it records the session event,
-  // and the existing notice confirms the result immediately on the page.
+  // and the existing notice confirms the result immediately on the page. The
+  // view then follows the journey forward: when the completed stage was the
+  // standing stage and a next stage exists, the detail panel opens it, so the
+  // user lands on the stage whose next move is now current.
   const handleCompleteStage = (stage: RoadmapStageName) => {
+    // Sequential progression: only the standing stage may be completed. A
+    // future stage's completion action can never record an event, no matter
+    // how it is reached.
+    if (stage !== journey.currentStage) return;
     recordStageCompleted(stage);
     announce(`${stage} is complete. Progress and your next stage are up to date.`);
+    // The view follows the journey forward: when the completed stage was the
+    // standing stage and a next stage exists, the detail panel opens it, so
+    // the user lands on the stage whose next move is now current. After Grow
+    // there is no next stage — the map itself is simply complete.
+    if (stage === journey.currentStage) {
+      const nextIndex = getStageIndex(stage) + 1;
+      if (nextIndex < ROADMAP_STAGES.length) {
+        setLocation(`/roadmap?stage=${encodeURIComponent(ROADMAP_STAGES[nextIndex].name)}`);
+      }
+    }
   };
 
   return (
@@ -71,6 +91,7 @@ export default function Roadmap() {
             activeStage={currentStage}
             completedStages={journey.completedStages}
             onComplete={handleCompleteStage}
+            hasStartedNextMove={hasStartedNextMove}
           />
 
           <div className="flex flex-col gap-5">
@@ -79,6 +100,8 @@ export default function Roadmap() {
               stageName={stageInfo.name}
               stageNumber={stageInfo.number}
               hint={stageInfo.why}
+              completed={isCurrentStageCompleted}
+              journeyComplete={journey.completedStages.length === ROADMAP_STAGES.length}
               onStart={() => {
                 // This button opens the selected stage's move; when that stage
                 // is already the active stage view, it is a re-open — not a

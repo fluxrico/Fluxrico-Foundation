@@ -336,6 +336,12 @@ type WorkspaceStateValue = {
   addLibraryEntry: (entry: LibraryEntry) => void;
   toggleLibraryEntrySaved: (id: string) => void;
   removeLibraryEntry: (id: string) => void;
+  /**
+   * True once the user's current next move has been started this session
+   * ('next-move-started'). Start/Continue labels on the Next Move cards read
+   * this — nothing completion-related depends on it.
+   */
+  hasStartedNextMove: boolean;
   /** Convenience wrappers so call sites stay declarative. */
   recordNavigatorCompleted: () => void;
   recordJourneyStarted: () => void;
@@ -564,6 +570,7 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
       updateSettings,
       realActivity,
       hasRealActivity: sessionEvents.length > 0,
+      hasStartedNextMove: sessionEvents.some((item) => item.key === 'next-move-started'),
       completedStages,
       libraryEntries,
       addLibraryEntry,
