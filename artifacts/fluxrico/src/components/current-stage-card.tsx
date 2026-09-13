@@ -43,8 +43,8 @@ export function CurrentStageCard({
       </div>
       <div className="mt-7">
         <div className="flex items-center justify-between text-[0.65rem] font-bold uppercase tracking-[0.14em] text-[#8385A1]">
-          <span>Stage progress</span>
-          <span className="text-[#6258D0]">{stageIndex + 1} of {stageTotal}</span>
+          <span>Journey progress</span>
+          <span className="text-[#6258D0]">{progressPercent}% · {stageIndex + 1} of {stageTotal}</span>
         </div>
         <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#ECECF6]">
           <div
