@@ -50,6 +50,19 @@ const CATEGORY_ICON: Record<string, typeof Compass> = {
 
 // ── Shared small pieces ──────────────────────────────────────────────────────
 
+// Same helper as AppShell and Settings: two-letter initials from the resolved
+// display name, so the avatar can never disagree with the signed-in identity.
+function initialsOf(name: string): string {
+  const letters = name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2);
+  return letters.toUpperCase() || 'MA';
+}
+
 function CardLabel({ icon: Icon, children }: { icon: typeof Compass; children: ReactNode }) {
   return (
     <div className="flex items-center gap-2 text-[0.63rem] font-bold uppercase tracking-[0.19em] text-[#6861C8]">
@@ -428,7 +441,7 @@ export default function Profile() {
               className="flex h-[4.5rem] w-[4.5rem] shrink-0 items-center justify-center rounded-2xl bg-[#D9F5FA] text-xl font-extrabold tracking-[-0.02em] text-[#267A8D]"
               data-testid="profile-avatar"
             >
-              {journey.profile.initials}
+              {initialsOf(displayName)}
             </span>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2">

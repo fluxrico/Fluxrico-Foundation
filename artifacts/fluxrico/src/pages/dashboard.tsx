@@ -22,8 +22,11 @@ export default function Dashboard() {
   const newUser = !journey.hasNavigatorData;
   const firstName = (user?.name ?? journey.profile.name).trim().split(/\s+/)[0];
 
+  // Opening the current next move is a real action when it enters the stage
+  // from a different view. Re-opening the already-active stage never records
+  // the event again — the recorder's idempotency guard guarantees that, and
+  // the Roadmap start button re-records nothing once the stage is already open.
   const openStage = () => {
-    // Opening the current next move is a real, existing action — record it.
     recordNextMoveStarted();
     setLocation(`/roadmap?stage=${encodeURIComponent(journey.currentStage)}`);
   };

@@ -9,8 +9,6 @@ import {
 } from 'react';
 import {
   LIBRARY_ENTRIES,
-  ROADMAP_STAGE_GUIDES,
-  getStageIndex,
   type JourneyActivity,
   type LibraryEntry,
   type RoadmapStageName,
@@ -39,10 +37,6 @@ export type NotificationItem = {
   /** Starter notification shipped with the preview — not a real user event. */
   sample?: boolean;
 };
-
-// Guidance copy reads from the shared stage guide so the notification and the
-// Roadmap can never drift apart. No journey definitions are duplicated here.
-const shapeGuide = ROADMAP_STAGE_GUIDES[getStageIndex('Shape')];
 
 // Starter notifications: they show the shape of the feed for a first visit and
 // are marked `sample: true` so the UI can label them as examples. Real events
@@ -75,7 +69,7 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     id: 'n6',
     category: 'Guidance',
     title: 'Guidance for Shape is ready',
-    detail: shapeGuide.guidance,
+    detail: 'Stage-specific guidance is waiting on your roadmap.',
     timestamp: 'Yesterday',
     read: false,
     href: '/roadmap?stage=Shape',
