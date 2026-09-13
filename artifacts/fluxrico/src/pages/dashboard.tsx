@@ -15,7 +15,7 @@ import { useWorkspaceState } from '@/lib/workspace-state';
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const journey = useJourney();
-  const { settings, recordNextMoveStarted } = useWorkspaceState();
+  const { settings, recordNextMoveStarted, hasStartedNextMove } = useWorkspaceState();
   const { user } = useAuthState();
   // A user without Navigator answers sees the new-user state; completing
   // Navigator personalizes the dashboard for the rest of the session.
@@ -52,6 +52,8 @@ export default function Dashboard() {
                 stageName={journey.currentStage}
                 stageNumber={journey.currentStageInfo.number}
                 hint={journey.currentStageInfo.why}
+                brief={journey.nextMoveBrief}
+                actionLabel={hasStartedNextMove ? 'Continue' : 'Start'}
                 onStart={openStage}
                 onViewRoadmap={() => setLocation('/roadmap')}
               />

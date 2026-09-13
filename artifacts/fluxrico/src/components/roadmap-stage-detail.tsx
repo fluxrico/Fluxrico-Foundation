@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
-import { CheckCircle2, ChevronLeft, ChevronRight, CircleCheck, Compass, ListChecks, Lightbulb, CircleDot } from 'lucide-react';
+import { ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, CircleCheck, Compass, ListChecks, Lightbulb, CircleDot, Route as RouteIcon } from 'lucide-react';
 import { Link } from 'wouter';
 import {
+  NEXT_MOVE_BRIEFS,
   ROADMAP_STAGE_GUIDES,
   ROADMAP_STAGES,
   getStageIndex,
@@ -16,6 +17,8 @@ type RoadmapStageDetailProps = {
   completedStages: readonly RoadmapStageName[];
   /** Confirms the stage's definition of done is met — a real user action. */
   onComplete: (stage: RoadmapStageName) => void;
+  /** True once the current next move has been started ('Start' vs 'Continue'). */
+  hasStartedNextMove?: boolean;
 };
 
 /** One small labeled block inside the stage detail. */
@@ -46,15 +49,22 @@ function DetailBlock({
  * DEFINITION OF DONE → NEXT MOVE. Roadmap is an action system, so every
  * section is concrete and specific to the selected stage.
  */
-export function RoadmapStageDetail({ currentStage, activeStage, completedStages, onComplete }: RoadmapStageDetailProps) {
+export function RoadmapStageDetail({ currentStage, activeStage, completedStages, onComplete, hasStartedNextMove = false }: RoadmapStageDetailProps) {
   const stageIndex = getStageIndex(activeStage);
   const stage: RoadmapStageInfo = ROADMAP_STAGES[stageIndex];
   const guide = ROADMAP_STAGE_GUIDES[stageIndex];
+  const brief = NEXT_MOVE_BRIEFS[stageIndex];
   // A stage is complete only through real completed work, never by position;
   // the current stage is still highlighted even when it is not yet complete.
   const isCompleted = completedStages.includes(activeStage);
   const state =
     isCompleted ? 'complete' : stageIndex === getStageIndex(currentStage) ? 'current' : 'upcoming';
+  // Start's completion is the Navigator itself — completing it from the
+  // roadmap would create a second Start path, so it is not offered there.
+  // Stages progress sequentially: completion is offered only on the standing
+  // stage, never on a stage the journey has not reached yet.
+  const isStandingStage = activeStage === currentStage;
+  const showCompleteAction = !isCompleted && activeStage !== 'Start' && isStandingStage;
   const prevStage = stageIndex > 0 ? ROADMAP_STAGES[stageIndex - 1] : null;
   const nextStage = stageIndex < ROADMAP_STAGES.length - 1 ? ROADMAP_STAGES[stageIndex + 1] : null;
 
@@ -138,14 +148,16 @@ export function RoadmapStageDetail({ currentStage, activeStage, completedStages,
               The one completion action in the product: confirming the stage's
               definition of done. Completing records a real event — opening or
               viewing a stage never does. Already-completed stages show an
-              honest confirmation instead of a repeatable button.
+              honest confirmation instead of a repeatable button. Start has no
+              completion button here: the Navigator itself completes Start,
+              and a second path would complete it twice.
             */}
             {isCompleted ? (
               <p className="mt-3 flex items-center gap-2 text-[0.62rem] font-bold uppercase tracking-[0.13em] text-[#5D53C2]">
                 <CircleCheck size={15} strokeWidth={2} />
                 Marked complete from real work
               </p>
-            ) : (
+            ) : showCompleteAction ? (
               <div className="mt-3">
                 <button
                   type="button"
@@ -160,10 +172,80 @@ export function RoadmapStageDetail({ currentStage, activeStage, completedStages,
                   Only mark this when the definition of done above is genuinely met.
                 </p>
               </div>
+            ) : activeStage === 'Start' ? (
+              <p className="mt-3 text-[0.66rem] leading-5 text-[#7B8DA8]">
+                Start completes through the Navigator — take the Navigator to finish this stage.
+              </p>
+            ) : (
+              <p className="mt-3 text-[0.66rem] leading-5 text-[#7B8DA8]">
+                Stages progress in order — complete {currentStage} first, then this one opens for completion.
+              </p>
             )}
           </div>
         </DetailBlock>
       </div>
+
+      {/* Next Move — the same shared brief the dashboard card shows, placed
+          directly on the stage experience so the action is obvious on arrival. */}
+      {brief && !isCompleted && (
+        <div className="mt-7 rounded-[1.4rem] bg-[#211F61] p-6 text-white shadow-[0_14px_36px_rgba(38,34,121,0.16)] sm:p-7">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-[0.63rem] font-bold uppercase tracking-[0.19em] text-[#8DDEF0]">
+              <RouteIcon size={16} strokeWidth={1.8} />
+              Next move
+            </div>
+            <span className="rounded-full border border-white/15 px-3 py-1.5 text-[0.58rem] font-bold uppercase tracking-[0.15em] text-[#B9BCE1]">
+              {stage.name} / {stage.number}
+              <span className="sr-only"> next move</span>
+            </span>
+          </div>
+          <p className="mt-5 max-w-[30rem] text-[1.3rem] font-extrabold leading-[1.14] tracking-[-0.04em] text-[#FCFCFF]">{brief.title}</p>
+          <div className="mt-5 grid gap-4 border-t border-white/10 pt-5 sm:grid-cols-2 sm:gap-x-8">
+            <div>
+              <p className="text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[#A9E7F3]">Action</p>
+              <p className="mt-1.5 text-sm leading-6 text-[#D7D9EE]">{brief.action}</p>
+            </div>
+            <div>
+              <p className="text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[#A9E7F3]">Why it matters</p>
+              <p className="mt-1.5 text-sm leading-6 text-[#D7D9EE]">{brief.why}</p>
+            </div>
+            <div>
+              <p className="text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[#A9E7F3]">How to do it</p>
+              <p className="mt-1.5 text-sm leading-6 text-[#D7D9EE]">{brief.how}</p>
+            </div>
+            <div>
+              <p className="text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[#A9E7F3]">Definition of done</p>
+              <p className="mt-1.5 text-sm leading-6 text-[#D7D9EE]">{brief.done}</p>
+            </div>
+          </div>
+          {activeStage === 'Start' ? (
+            <Link
+              href="/navigator"
+              className="fluxrico-focus group mt-6 inline-flex min-h-11 items-center gap-3 rounded-full bg-[#F4F3FF] px-5 text-[0.66rem] font-bold uppercase tracking-[0.15em] text-[#302B79] transition-colors hover:bg-white"
+              data-testid="link-stage-navigator"
+            >
+              {hasStartedNextMove ? 'Continue in Navigator' : 'Start Navigator'}
+              <ArrowRight size={15} strokeWidth={2.2} className="transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          ) : null}
+          {activeStage !== 'Start' && isStandingStage && (
+            <button
+              type="button"
+              onClick={() => onComplete(activeStage)}
+              className="fluxrico-focus mt-6 inline-flex min-h-11 items-center gap-2 rounded-full bg-[#F4F3FF] px-5 text-[0.66rem] font-bold uppercase tracking-[0.15em] text-[#302B79] transition-colors hover:bg-white"
+              data-testid={`button-complete-next-move-${activeStage.toLowerCase()}`}
+            >
+              <CircleCheck size={15} strokeWidth={2} />
+              Mark {stage.name} complete
+            </button>
+          )}
+          {activeStage !== 'Start' && !isStandingStage && (
+            <p className="mt-6 max-w-[26rem] text-[0.7rem] leading-5 text-[#B9BCE1]">
+              Stages progress in order — complete {currentStage} first. This move unlocks when {stage.name} becomes your current stage.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Prev / next navigation between stages */}
       <div className="mt-8 flex items-center justify-between gap-3 border-t border-[#ECECF1] pt-5">
