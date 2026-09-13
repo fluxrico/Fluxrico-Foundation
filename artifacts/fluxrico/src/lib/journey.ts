@@ -370,6 +370,28 @@ export function journeyProgress(completedStages: readonly RoadmapStageName[]): {
 }
 
 /**
+ * The calm, professional sentence describing completed work. Derived only
+ * from real completed stages — one shared definition so Dashboard, Roadmap,
+ * and Profile can never claim different (or invented) accomplishments.
+ *
+ *   0 completed → "No stages completed yet — every journey starts at 01."
+ *   1 completed → "You've completed Start."
+ *   3 completed → "You've completed 3 of 6 stages."
+ *   all 6       → "You've completed all six stages. Journey complete."
+ */
+export function describeCompletedStages(completedStages: readonly RoadmapStageName[]): string {
+  const total = ROADMAP_STAGES.length;
+  const count = new Set(completedStages).size;
+  if (count === 0) return 'No stages completed yet — every journey starts at 01.';
+  if (count === 1) {
+    const first = [...new Set(completedStages)][0];
+    return `You've completed ${first}.`;
+  }
+  if (count === total) return "You've completed all six stages. Journey complete.";
+  return `You've completed ${count} of ${total} stages.`;
+}
+
+/**
  * The stage the journey currently stands on. The Navigator's placement (or
  * the base journey stage) is the floor: the journey never stands earlier than
  * the stage it was placed on. Completing a stage through real work advances

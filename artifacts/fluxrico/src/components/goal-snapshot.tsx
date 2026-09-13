@@ -37,7 +37,9 @@ export function GoalSnapshot({ goal, status, stageIndex, stageTotal, progressPer
         </div>
         <div className="text-right">
           <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#8587A3]">PROGRESS</p>
-          <p className="mt-1 text-sm font-bold text-[#8587A3]">{stageIndex + 1} of {stageTotal} stages</p>
+          <p className="mt-1 text-sm font-bold text-[#8587A3]">
+            {progressPercent}% of the path · {stageIndex + 1} of {stageTotal} stages
+          </p>
         </div>
       </div>
       <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/80"><div className="h-full rounded-full bg-[#6857E8] transition-[width] duration-500" style={{ width: `${progressPercent}%` }} /></div>

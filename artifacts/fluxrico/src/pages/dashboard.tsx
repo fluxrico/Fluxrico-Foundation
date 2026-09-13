@@ -76,7 +76,12 @@ export default function Dashboard() {
                 onContinue={openStage}
               />
               <div id="roadmap">
-                <RoadmapProgress currentStage={journey.currentStage} completedStages={journey.completedStages} />
+                <RoadmapProgress
+                  currentStage={journey.currentStage}
+                  completedStages={journey.completedStages}
+                  progressPercent={journey.progressPercent}
+                  nextMove={journey.nextMove}
+                />
               </div>
             </div>
 

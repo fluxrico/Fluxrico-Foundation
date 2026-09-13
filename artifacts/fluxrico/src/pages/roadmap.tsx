@@ -59,6 +59,8 @@ export default function Roadmap() {
     }
   };
 
+  const journeyComplete = journey.completedStages.length === ROADMAP_STAGES.length;
+
   return (
     <AppShell>
       <div className="mx-auto max-w-[1180px]">
@@ -104,7 +106,7 @@ export default function Roadmap() {
               stageNumber={stageInfo.number}
               hint={stageInfo.why}
               completed={isCurrentStageCompleted}
-              journeyComplete={journey.completedStages.length === ROADMAP_STAGES.length}
+              journeyComplete={journeyComplete}
               onStart={() => {
                 // This button opens the selected stage's move; when that stage
                 // is already the active stage view, it is a re-open — not a
@@ -124,14 +126,16 @@ export default function Roadmap() {
                 Journey progress
               </div>
               <p className="mt-4 text-sm font-semibold leading-6 text-[#343568]">
-                {isCurrentStage
-                  ? `You are in ${journey.currentStage}.`
-                  : `Viewing ${currentStage}. Your current stage is ${journey.currentStage}.`}
+                {journeyComplete
+                  ? 'Journey complete — every stage met its definition of done.'
+                  : isCurrentStage
+                    ? `You are in ${journey.currentStage}.`
+                    : `Viewing ${currentStage}. Your current stage is ${journey.currentStage}.`}
               </p>
               <div className="mt-4">
                 <div className="flex items-center justify-between text-[0.62rem] font-bold uppercase tracking-[0.13em] text-[#8385A1]">
-                  <span>Stages</span>
-                  <span className="text-[#6258D0]">{stageIndex + 1} of {ROADMAP_STAGES.length}</span>
+                  <span>Progress</span>
+                  <span className="text-[#6258D0]">{journey.progressPercent}% · {journey.completedStages.length} of {ROADMAP_STAGES.length} stages completed</span>
                 </div>
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#ECECF6]">
                   <div className="h-full rounded-full bg-gradient-to-r from-[#16C5E9] to-[#6857E8] transition-[width] duration-500" style={{ width: `${journey.progressPercent}%` }} />

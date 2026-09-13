@@ -15,7 +15,7 @@ import { useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
 import { AppShell, PageHeader } from '@/components/app-shell';
 import { useJourney } from '@/hooks/use-journey';
-import { ROADMAP_STAGES, ROADMAP_STAGE_GUIDES, getStageIndex } from '@/lib/journey';
+import { ROADMAP_STAGES, ROADMAP_STAGE_GUIDES, describeCompletedStages, getStageIndex } from '@/lib/journey';
 import type { JourneyActivity, RoadmapStageName } from '@/lib/journey';
 import { useAuthState } from '@/lib/auth-state';
 import { useWorkspaceState } from '@/lib/workspace-state';
@@ -310,10 +310,10 @@ function JourneyTab({ currentStage, progressPercent, completedStages }: { curren
               data-testid="progress-profile-journey"
             />
           </div>
-          <p className="mt-4 text-xs leading-5 text-[#727596]">
-            {completedStages.length === 0
-              ? 'No stages completed yet — one small move starts the path.'
-              : `${completedStages.length} stage${completedStages.length === 1 ? '' : 's'} completed so far. The next one starts with one small move.`}
+          <p className="mt-4 text-xs leading-5 text-[#727596]" data-testid="text-profile-accomplished">
+            {describeCompletedStages(completedStages)}
+            {completedStages.length > 0 && completedStages.length < ROADMAP_STAGES.length &&
+              ' The next one starts with one small move.'}
           </p>
         </section>
       </div>
@@ -454,6 +454,14 @@ export default function Profile() {
                 >
                   <span className="h-1.5 w-1.5 rounded-full bg-[#16C6EA]" aria-hidden="true" /> {STATUS_LABEL[journey.status]}
                 </span>
+                {journey.completedStages.length === journey.stageTotal && (
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-full bg-[#EDEBFC] px-2.5 py-1 text-[0.56rem] font-bold uppercase tracking-[0.13em] text-[#6A5BE2]"
+                    data-testid="badge-profile-journey-complete"
+                  >
+                    <Check size={11} strokeWidth={2.5} aria-hidden="true" /> Journey complete
+                  </span>
+                )}
               </div>
               <p className="mt-1.5 text-sm font-semibold text-[#747696]">{journey.profile.title}</p>
               <p className="mt-2 text-xs leading-5 text-[#8587A3]">
@@ -580,9 +588,11 @@ export default function Profile() {
                 STAGE {journey.currentStageInfo.number} OF {String(journey.stageTotal).padStart(2, '0')}
               </p>
               <p className="mt-2 max-w-[15rem] text-sm font-semibold leading-6 text-[#D6D8F5]">
-                {journey.stageIndex === 0
-                  ? 'You are standing on the first stage — the path only asks for one small move.'
-                  : `${journey.stageIndex} of ${journey.stageTotal} stages behind you — momentum is doing its quiet work.`}
+                {journey.completedStages.length === journey.stageTotal
+                  ? 'All six stages are behind you — the rhythm now belongs to you.'
+                  : journey.stageIndex === 0
+                    ? 'You are standing on the first stage — the path only asks for one small move.'
+                    : `${journey.stageIndex} of ${journey.stageTotal} stages behind you — momentum is doing its quiet work.`}
               </p>
               <Link
                 href={`/roadmap?stage=${journey.currentStage}`}
