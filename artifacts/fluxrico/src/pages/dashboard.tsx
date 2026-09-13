@@ -45,15 +45,21 @@ export default function Dashboard() {
               description={`You are in ${journey.currentStage}. Keep the next move small, specific, and useful.`}
             />
 
-            {/* Level 1 — the action. */}
+            {/* Level 1 — the action. The headline is the standing stage's own
+                brief title, so the title, action, how, and definition of done
+                below always describe the same move — one definition, from the
+                shared NextMoveBrief. Once every stage is complete there is no
+                live next move left, so the card confirms instead of offering. */}
             <div className="fluxrico-rise mt-10">
               <NextMoveCard
-                move={journey.nextMove}
+                move={journey.nextMoveBrief?.title ?? journey.nextMove}
                 stageName={journey.currentStage}
                 stageNumber={journey.currentStageInfo.number}
                 hint={journey.currentStageInfo.why}
                 brief={journey.nextMoveBrief}
                 actionLabel={hasStartedNextMove ? 'Continue' : 'Start'}
+                actionHint={`Opens ${journey.currentStage} on your roadmap — your next move is saved the moment you start it.`}
+                journeyComplete={journey.completedStages.length === journey.stageTotal}
                 onStart={openStage}
                 onViewRoadmap={() => setLocation('/roadmap')}
               />

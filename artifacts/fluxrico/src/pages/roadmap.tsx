@@ -53,11 +53,9 @@ export default function Roadmap() {
     // standing stage and a next stage exists, the detail panel opens it, so
     // the user lands on the stage whose next move is now current. After Grow
     // there is no next stage — the map itself is simply complete.
-    if (stage === journey.currentStage) {
-      const nextIndex = getStageIndex(stage) + 1;
-      if (nextIndex < ROADMAP_STAGES.length) {
-        setLocation(`/roadmap?stage=${encodeURIComponent(ROADMAP_STAGES[nextIndex].name)}`);
-      }
+    const nextIndex = getStageIndex(stage) + 1;
+    if (nextIndex < ROADMAP_STAGES.length) {
+      setLocation(`/roadmap?stage=${encodeURIComponent(ROADMAP_STAGES[nextIndex].name)}`);
     }
   };
 
@@ -84,17 +82,22 @@ export default function Roadmap() {
           <RoadmapJourneyMap currentStage={journey.currentStage} activeStage={currentStage} completedStages={journey.completedStages} />
         </div>
 
-        {/* Level 2 — the selected stage beside its next move. */}
-        <div className="fluxrico-rise fluxrico-rise-delay-2 mt-5 grid gap-5 lg:grid-cols-[1.35fr_0.65fr]">
-          <RoadmapStageDetail
-            currentStage={journey.currentStage}
-            activeStage={currentStage}
-            completedStages={journey.completedStages}
-            onComplete={handleCompleteStage}
-            hasStartedNextMove={hasStartedNextMove}
-          />
+        {/* Level 2 — the selected stage beside its next move. On mobile the
+            next move (with its CTA) leads, so the actionable step is not
+            buried beneath the long stage detail; desktop keeps the original
+            side-by-side layout. */}
+        <div className="fluxrico-rise fluxrico-rise-delay-2 mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[1.35fr_0.65fr]">
+          <div className="order-2 min-w-0 lg:order-1">
+            <RoadmapStageDetail
+              currentStage={journey.currentStage}
+              activeStage={currentStage}
+              completedStages={journey.completedStages}
+              onComplete={handleCompleteStage}
+              hasStartedNextMove={hasStartedNextMove}
+            />
+          </div>
 
-          <div className="flex flex-col gap-5">
+          <div className="order-1 flex min-w-0 flex-col gap-5 lg:order-2">
             <NextMoveCard
               move={stageInfo.nextMove}
               stageName={stageInfo.name}
