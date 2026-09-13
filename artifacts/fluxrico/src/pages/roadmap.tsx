@@ -80,7 +80,10 @@ export default function Roadmap() {
               stageNumber={stageInfo.number}
               hint={stageInfo.why}
               onStart={() => {
-                recordNextMoveStarted();
+                // This button opens the selected stage's move; when that stage
+                // is already the active stage view, it is a re-open — not a
+                // new move — so the event is only recorded on a real entry.
+                if (!isCurrentStage) recordNextMoveStarted();
                 announce('Your next move is noted locally. Tools for this step are still taking shape.');
               }}
             />
