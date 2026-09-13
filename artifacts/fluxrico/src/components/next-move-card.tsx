@@ -19,6 +19,8 @@ type NextMoveCardProps = {
   brief?: NextMoveBrief | null;
   /** Label for the primary action — reads Start until the move has been opened. */
   actionLabel?: string;
+  /** One line under the actions telling the user what pressing the CTA does. */
+  actionHint?: string;
   onStart: () => void;
   onViewRoadmap?: () => void;
   /** True only when this stage is genuinely completed — the card then confirms instead of offering. */
@@ -57,6 +59,7 @@ export function NextMoveCard({
   hint,
   brief,
   actionLabel,
+  actionHint,
   onStart,
   onViewRoadmap,
   completed = false,
@@ -167,7 +170,7 @@ export function NextMoveCard({
           <button
             type="button"
             onClick={onStart}
-            className="fluxrico-focus group inline-flex min-h-12 items-center justify-center gap-4 rounded-full bg-[#F4F3FF] px-5 text-[0.68rem] font-bold uppercase tracking-[0.15em] text-[#302B79] transition-transform hover:-translate-y-0.5 hover:bg-white"
+            className="fluxrico-focus group inline-flex min-h-12 w-full items-center justify-center gap-4 rounded-full bg-[#F4F3FF] px-5 text-[0.68rem] font-bold uppercase tracking-[0.15em] text-[#302B79] transition-transform hover:-translate-y-0.5 hover:bg-white sm:w-auto"
             data-testid="button-start-next-move"
           >
             {label}
@@ -180,13 +183,18 @@ export function NextMoveCard({
           <button
             type="button"
             onClick={onViewRoadmap}
-            className="fluxrico-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-white/20 px-5 text-[0.66rem] font-bold uppercase tracking-[0.14em] text-[#A8EAF7] transition-colors hover:border-white/40 hover:text-white"
+            className="fluxrico-focus inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-white/20 px-5 text-[0.66rem] font-bold uppercase tracking-[0.14em] text-[#A8EAF7] transition-colors hover:border-white/40 hover:text-white sm:w-auto"
             data-testid="button-view-roadmap"
           >
             View roadmap
           </button>
         )}
       </div>
+      {actionHint && !completed && !journeyComplete && (
+        <p className="relative mt-4 text-[0.68rem] font-medium leading-5 text-[#B9BCE1]" data-testid="text-next-move-action-hint">
+          {actionHint}
+        </p>
+      )}
       <p className="relative mt-5 text-[0.68rem] font-medium text-[#9398C5]">
         {journeyComplete
           ? 'The full path is behind you — the rhythm now belongs to you.'

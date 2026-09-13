@@ -162,7 +162,7 @@ export function RoadmapStageDetail({ currentStage, activeStage, completedStages,
                 <button
                   type="button"
                   onClick={() => onComplete(activeStage)}
-                  className="fluxrico-focus inline-flex min-h-10 items-center gap-2 rounded-full bg-[#EBE9FF] px-4 text-[0.62rem] font-bold uppercase tracking-[0.13em] text-[#5147C2] transition-colors hover:bg-[#E1DEFF]"
+                  className="fluxrico-focus inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-full bg-[#EBE9FF] px-4 text-[0.62rem] font-bold uppercase tracking-[0.13em] text-[#5147C2] transition-colors hover:bg-[#E1DEFF] sm:w-auto"
                   data-testid={`button-complete-stage-${activeStage.toLowerCase()}`}
                 >
                   <CircleCheck size={15} strokeWidth={2} />
@@ -232,7 +232,7 @@ export function RoadmapStageDetail({ currentStage, activeStage, completedStages,
             <button
               type="button"
               onClick={() => onComplete(activeStage)}
-              className="fluxrico-focus mt-6 inline-flex min-h-11 items-center gap-2 rounded-full bg-[#F4F3FF] px-5 text-[0.66rem] font-bold uppercase tracking-[0.15em] text-[#302B79] transition-colors hover:bg-white"
+              className="fluxrico-focus mt-6 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#F4F3FF] px-5 text-[0.66rem] font-bold uppercase tracking-[0.15em] text-[#302B79] transition-colors hover:bg-white sm:w-auto"
               data-testid={`button-complete-next-move-${activeStage.toLowerCase()}`}
             >
               <CircleCheck size={15} strokeWidth={2} />
