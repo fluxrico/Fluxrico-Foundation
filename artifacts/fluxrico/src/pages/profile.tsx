@@ -405,8 +405,10 @@ export default function Profile() {
   const displayName = user?.name ?? settings.displayName ?? journey.profile.name;
   const email = user?.email ?? settings.email;
 
-  const handleSignOut = () => {
-    signOut();
+  const handleSignOut = async () => {
+    // Destroys the server session and clears the cookie, then the guard
+    // redirects; explicit navigation keeps the destination deterministic.
+    await signOut();
     setLocation('/signin');
   };
 

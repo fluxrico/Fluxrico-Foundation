@@ -1,61 +1,75 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useLocation } from 'wouter';
+import { Link, useLocation, useSearch } from 'wouter';
 import { ArrowRight } from 'lucide-react';
-import { AuthLayout } from '@/components/auth/auth-layout';
-import { AuthField, AuthInput, AuthSubmit, PasswordInput } from '@/components/auth/auth-fields';
-import { validateEmail, validatePassword } from '@/components/auth/validation';
+import { AuthLayout, AuthHeading } from '@/components/auth/auth-layout';
+import { AuthField, AuthSubmit, PasswordInput, AuthInput } from '@/components/auth/auth-fields';
+import { AuthNotice } from '@/components/auth/auth-notice';
+import { validateEmail } from '@/components/auth/validation';
 import { useAuthState } from '@/lib/auth-state';
+import { safeReturnTo } from '@/components/require-auth';
 
-type Errors = { email?: string | null; password?: string | null };
+const SIGN_IN_ERRORS: Record<string, string> = {
+  'invalid-credentials': 'Invalid email or password.',
+  'email-not-verified': 'Your email is not verified yet. Check your inbox for the verification link.',
+  network: 'We could not reach Fluxrico. Check your connection and try again.',
+  unknown: 'We could not sign you in right now. Please try again.',
+};
 
 export default function SignIn() {
   const [, navigate] = useLocation();
+  const search = useSearch();
   const { signIn, user } = useAuthState();
   const [email, setEmail] = useState(user?.email ?? '');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<Errors>({});
+  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  const onSubmit = (event: FormEvent) => {
+  const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    const nextErrors: Errors = {
-      email: validateEmail(email),
-      password: validatePassword(password),
-    };
-    setErrors(nextErrors);
-    if (nextErrors.email || nextErrors.password) return;
+    const emailError = validateEmail(email);
+    if (emailError) {
+      setError(emailError);
+      return;
+    }
+    if (!password) {
+      setError('Enter your password.');
+      return;
+    }
 
-    // Frontend-only phase: restore the local user (or derive one from the
-    // email) and continue the journey. No server is contacted.
+    setError(null);
     setPending(true);
-    window.setTimeout(() => {
-      signIn({ email });
-      navigate('/dashboard', { replace: true });
-    }, 650);
+    const result = await signIn({ email, password });
+    setPending(false);
+
+    if (!result.ok) {
+      setError(SIGN_IN_ERRORS[result.error ?? 'unknown'] ?? SIGN_IN_ERRORS.unknown);
+      return;
+    }
+
+    // Return the user to the route they were bounced from, defaulting to the
+    // workspace home. `session?` marks a redirect after session expiry.
+    const returnTo = safeReturnTo(new URLSearchParams(search).get('returnTo'));
+    navigate(returnTo, { replace: true });
   };
 
   return (
-    <AuthLayout hint="Pick up where you left off — your current stage and next move are waiting in the workspace.">
-      <div className="fluxrico-rise text-center">
-        <p className="text-[0.62rem] font-bold uppercase tracking-[0.2em] text-[hsl(var(--landing-purple))]">Fluxrico</p>
-        <h1 className="mt-3 text-[1.85rem] font-extrabold leading-[1.08] tracking-[-0.045em] text-[hsl(var(--landing-ink))]">
-          Welcome back
-        </h1>
-        <p className="auth-hint mx-auto mt-3 max-w-[24rem] text-sm leading-6">
-          Continue your journey from where you left off.
-        </p>
-      </div>
+    <AuthLayout>
+      <AuthHeading label="FLUXRICO WORKSPACE" title="Welcome back.">
+        Pick up where you left off — your current stage and next move are waiting.
+      </AuthHeading>
 
-      <form onSubmit={onSubmit} noValidate className="auth-card mt-8 space-y-5 p-6 sm:p-8" aria-labelledby="signin-title">
+      <form onSubmit={onSubmit} noValidate className="auth-card fluxrico-rise fluxrico-rise-delay-1 mt-8 space-y-5 p-6 sm:p-8" aria-labelledby="signin-title">
         <h2 id="signin-title" className="sr-only">
           Sign in to Fluxrico
         </h2>
 
-        <AuthField
-          label="Email"
-          htmlFor="signin-email"
-          error={errors.email}
-        >
+        {new URLSearchParams(search).get('session') === 'expired' ? (
+          <AuthNotice tone="info">Your session has expired. Please sign in again.</AuthNotice>
+        ) : null}
+
+        {error ? <AuthNotice tone="error">{error}</AuthNotice> : null}
+
+        <AuthField label="Email" htmlFor="signin-email">
           <AuthInput
             id="signin-email"
             name="email"
@@ -65,8 +79,7 @@ export default function SignIn() {
             placeholder="you@example.com"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            invalid={Boolean(errors.email)}
-            describedBy={errors.email ? 'signin-email-error' : undefined}
+            invalid={false}
             data-testid="signin-input-email"
           />
         </AuthField>
@@ -74,7 +87,6 @@ export default function SignIn() {
         <AuthField
           label="Password"
           htmlFor="signin-password"
-          error={errors.password}
           action={
             <Link
               href="/forgot-password"
@@ -92,8 +104,6 @@ export default function SignIn() {
             placeholder="Your password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            invalid={Boolean(errors.password)}
-            describedBy={errors.password ? 'signin-password-error' : undefined}
             data-testid="signin-input-password"
           />
         </AuthField>

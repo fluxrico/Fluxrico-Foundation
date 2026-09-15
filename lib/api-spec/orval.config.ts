@@ -57,6 +57,10 @@ export default defineConfig({
       prettier: true,
       override: {
         zod: {
+          // The workspace pins zod 3.25 (root export = v3 API; the project's
+          // `zod/v4` imports use the subpath). Generated schemas must match
+          // the installed root API, so pin codegen output to v3.
+          version: 3,
           coerce: {
             query: ['boolean', 'number', 'string'],
             param: ['boolean', 'number', 'string'],

@@ -1,12 +1,18 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useLocation } from 'wouter';
 import { ArrowRight } from 'lucide-react';
-import { AuthLayout } from '@/components/auth/auth-layout';
+import { AuthLayout, AuthHeading } from '@/components/auth/auth-layout';
 import { AuthField, AuthInput, AuthSubmit, PasswordInput } from '@/components/auth/auth-fields';
-import { validateEmail, validateName, validatePassword } from '@/components/auth/validation';
+import { AuthNotice } from '@/components/auth/auth-notice';
+import { validateEmail, validateName, validatePassword, validatePasswordConfirmation } from '@/components/auth/validation';
 import { useAuthState } from '@/lib/auth-state';
 
-type Errors = { name?: string | null; email?: string | null; password?: string | null };
+type Errors = {
+  name?: string | null;
+  email?: string | null;
+  password?: string | null;
+  confirm?: string | null;
+};
 
 export default function SignUp() {
   const [, navigate] = useLocation();
@@ -14,46 +20,64 @@ export default function SignUp() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
+  const [formError, setFormError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  const onSubmit = (event: FormEvent) => {
+  const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
     const nextErrors: Errors = {
       name: validateName(name),
       email: validateEmail(email),
       password: validatePassword(password),
+      confirm: validatePasswordConfirmation(password, confirm),
     };
+    if (!acceptedTerms) nextErrors.confirm ??= null;
     setErrors(nextErrors);
-    if (nextErrors.name || nextErrors.email || nextErrors.password) return;
+    setFormError(null);
+    if (!acceptedTerms) {
+      setFormError('Please acknowledge the terms to continue.');
+      return;
+    }
+    if (nextErrors.name || nextErrors.email || nextErrors.password || nextErrors.confirm) return;
 
-    // Frontend-only phase: local state now, a real provider behind the same
-    // call later. New users continue into the Navigator, never the dashboard.
     setPending(true);
-    window.setTimeout(() => {
-      signUp({ name, email });
-      navigate('/navigator', { replace: true });
-    }, 650);
+    const result = await signUp({ name, email, password });
+    setPending(false);
+
+    if (!result.ok) {
+      if (result.error === 'email-taken') {
+        setFormError('An account with this email already exists. Try signing in instead.');
+        setErrors({ email: ' ' }); // Marks the field without duplicating the copy.
+      } else if (result.error === 'network') {
+        setFormError('We could not reach Fluxrico. Check your connection and try again.');
+      } else {
+        setFormError('We could not create your account. Check your details and try again.');
+      }
+      return;
+    }
+
+    // Real account exists now, email unverified — the pending screen takes
+    // over. The Navigator still waits until after verified sign-in.
+    navigate('/verify?pending=1', { replace: true });
   };
 
   return (
-    <AuthLayout hint="Your answers stay in this browser for now. The full journey — idea, clarity, direction — begins the moment you take the first step.">
-      <div className="fluxrico-rise text-center">
-        <p className="text-[0.62rem] font-bold uppercase tracking-[0.2em] text-[hsl(var(--landing-purple))]">Fluxrico</p>
-        <h1 className="mt-3 text-[1.85rem] font-extrabold leading-[1.08] tracking-[-0.045em] text-[hsl(var(--landing-ink))]">
-          Create your workspace
-        </h1>
-        <p className="auth-hint mx-auto mt-3 max-w-[24rem] text-sm leading-6">
-          Start with a clear direction and turn your next useful step into progress.
-        </p>
-      </div>
+    <AuthLayout>
+      <AuthHeading label="YOUR JOURNEY STARTS HERE" title="Create your Fluxrico account.">
+        Start turning what you know into a clear direction.
+      </AuthHeading>
 
-      <form onSubmit={onSubmit} noValidate className="auth-card mt-8 space-y-5 p-6 sm:p-8" aria-labelledby="signup-title">
+      <form onSubmit={onSubmit} noValidate className="auth-card fluxrico-rise fluxrico-rise-delay-1 mt-8 space-y-5 p-6 sm:p-8" aria-labelledby="signup-title">
         <h2 id="signup-title" className="sr-only">
           Create your Fluxrico account
         </h2>
 
-        <AuthField label="Full name" htmlFor="signup-name" error={errors.name}>
+        {formError ? <AuthNotice tone="error">{formError}</AuthNotice> : null}
+
+        <AuthField label="Name" htmlFor="signup-name" error={errors.name}>
           <AuthInput
             id="signup-name"
             name="name"
@@ -61,13 +85,13 @@ export default function SignUp() {
             placeholder="Maya Rodriguez"
             value={name}
             onChange={(event) => setName(event.target.value)}
-            invalid={Boolean(errors.name)}
-            describedBy={errors.name ? 'signup-name-error' : undefined}
+            invalid={Boolean(errors.name?.trim())}
+            describedBy={errors.name?.trim() ? 'signup-name-error' : undefined}
             data-testid="signup-input-name"
           />
         </AuthField>
 
-        <AuthField label="Email" htmlFor="signup-email" error={errors.email}>
+        <AuthField label="Email" htmlFor="signup-email" error={errors.email?.trim() || null}>
           <AuthInput
             id="signup-email"
             name="email"
@@ -77,8 +101,8 @@ export default function SignUp() {
             placeholder="you@example.com"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            invalid={Boolean(errors.email)}
-            describedBy={errors.email ? 'signup-email-error' : undefined}
+            invalid={Boolean(errors.email?.trim())}
+            describedBy={errors.email?.trim() ? 'signup-email-error' : undefined}
             data-testid="signup-input-email"
           />
         </AuthField>
@@ -97,13 +121,40 @@ export default function SignUp() {
           />
         </AuthField>
 
-        <AuthSubmit pending={pending} pendingLabel="Creating your workspace…">
+        <AuthField label="Confirm password" htmlFor="signup-confirm" error={errors.confirm}>
+          <PasswordInput
+            id="signup-confirm"
+            name="confirm-new-password"
+            autoComplete="new-password"
+            placeholder="Repeat your password"
+            value={confirm}
+            onChange={(event) => setConfirm(event.target.value)}
+            invalid={Boolean(errors.confirm)}
+            describedBy={errors.confirm ? 'signup-confirm-error' : undefined}
+            data-testid="signup-input-confirm"
+          />
+        </AuthField>
+
+        <label className="flex cursor-pointer items-start gap-2.5" data-testid="signup-terms">
+          <input
+            type="checkbox"
+            checked={acceptedTerms}
+            onChange={(event) => setAcceptedTerms(event.target.checked)}
+            className="fluxrico-focus mt-0.5 h-4 w-4 shrink-0 accent-[hsl(var(--landing-purple))]"
+          />
+          <span className="text-xs leading-5 text-[hsl(var(--landing-body))]">
+            I agree to Fluxrico's <span className="font-semibold text-[hsl(var(--landing-purple))]">terms</span> and{' '}
+            <span className="font-semibold text-[hsl(var(--landing-purple))]">privacy practices</span>.
+          </span>
+        </label>
+
+        <AuthSubmit pending={pending} pendingLabel="Creating your account…">
           Create account
           <ArrowRight size={14} strokeWidth={2.2} aria-hidden="true" />
         </AuthSubmit>
 
         <p className="text-center text-xs leading-5 text-[hsl(var(--landing-muted))]">
-          By creating an account you agree to Fluxrico's terms and privacy practices.
+          We'll email you a verification link before your workspace opens.
         </p>
       </form>
 

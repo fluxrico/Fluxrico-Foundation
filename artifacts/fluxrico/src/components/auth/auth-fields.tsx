@@ -40,7 +40,7 @@ export function AuthField({
   return (
     <div>
       <div className="flex items-baseline justify-between gap-3">
-        <label htmlFor={htmlFor} className="text-[0.72rem] font-bold uppercase tracking-[0.14em] text-[hsl(var(--landing-muted))]">
+        <label htmlFor={htmlFor} className="text-[0.8rem] font-semibold text-[hsl(var(--landing-body))]">
           {label}
         </label>
         {action}

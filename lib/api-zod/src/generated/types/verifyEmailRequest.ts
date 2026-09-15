@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.2.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface VerifyEmailRequest {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  token: string;
 }
