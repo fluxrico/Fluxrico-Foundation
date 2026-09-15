@@ -240,8 +240,10 @@ export default function Settings() {
   const displayName = user?.name ?? settings.displayName;
   const email = user?.email ?? settings.email;
 
-  const handleSignOut = () => {
-    signOut();
+  const handleSignOut = async () => {
+    // Destroys the server session and clears the cookie, then the guard
+    // redirects; explicit navigation keeps the destination deterministic.
+    await signOut();
     navigate('/signin');
   };
 

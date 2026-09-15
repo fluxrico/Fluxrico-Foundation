@@ -593,18 +593,75 @@
 
 /* ── Authentication (standalone focused surfaces) ─────────────────────────
    Auth pages resolve light/dark/system through the shared landing theme
-   store — one preference, applied on the auth root, never on <html>. */
+   store — one preference, applied on the auth root, never on <html>.
+   The auth root owns its full token set (the landing tokens are scoped to
+   .landing-root), so light and dark both resolve here. */
 
 .auth-root {
+  position: relative;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  --landing-ink: 241 52% 13%;
+  --landing-body: 238 24% 34%;
+  --landing-muted: 238 16% 47%;
+  --landing-surface: 0 0% 100%;
+  --landing-surface-2: 240 50% 97%;
+  --landing-canvas: 234 62% 96%;
+  --landing-line: 235 30% 89%;
+  --landing-purple: 248 74% 56%;
+  --landing-purple-deep: 240 62% 24%;
+  --landing-purple-soft: 249 90% 95%;
+  --landing-cyan: 190 85% 40%;
+  --landing-cyan-soft: 190 88% 94%;
+  --landing-primary-contrast: 0 0% 100%;
+  --landing-shadow-color: 240 50% 24%;
+  --auth-sheen: 0 0% 100%;
+  --auth-grid-ink: 240 45% 30%;
   background:
-    radial-gradient(46rem 26rem at 88% -10%, hsl(258 90% 62% / 0.05), transparent 60%),
-    radial-gradient(38rem 24rem at -8% 108%, hsl(190 90% 48% / 0.04), transparent 55%),
-    hsl(var(--landing-canvas));
+    radial-gradient(52rem 32rem at 84% -14%, hsl(250 90% 64% / 0.1), transparent 62%),
+    radial-gradient(42rem 28rem at -12% 2%, hsl(190 90% 50% / 0.08), transparent 56%),
+    radial-gradient(60rem 40rem at 50% 120%, hsl(248 74% 58% / 0.07), transparent 62%),
+    linear-gradient(180deg, hsl(var(--landing-canvas)) 0%, hsl(235 55% 93%) 100%);
   color: hsl(var(--landing-ink));
   transition: background-color 260ms ease, color 260ms ease;
+}
+
+.auth-root.dark {
+  --landing-ink: 235 60% 96%;
+  --landing-body: 234 26% 76%;
+  --landing-muted: 234 16% 62%;
+  --landing-surface: 240 42% 13%;
+  --landing-surface-2: 241 45% 10%;
+  --landing-canvas: 241 60% 7%;
+  --landing-line: 240 32% 21%;
+  --landing-purple: 251 100% 76%;
+  --landing-purple-deep: 249 60% 84%;
+  --landing-purple-soft: 249 48% 19%;
+  --landing-cyan: 190 92% 62%;
+  --landing-cyan-soft: 191 58% 15%;
+  --landing-primary-contrast: 241 70% 8%;
+  --landing-shadow-color: 243 70% 3%;
+  --auth-grid-ink: 230 80% 92%;
+  background:
+    radial-gradient(56rem 34rem at 80% -16%, hsl(250 95% 62% / 0.16), transparent 60%),
+    radial-gradient(46rem 30rem at -14% 4%, hsl(190 95% 46% / 0.08), transparent 56%),
+    radial-gradient(64rem 44rem at 52% 124%, hsl(248 85% 58% / 0.1), transparent 62%),
+    linear-gradient(178deg, hsl(240 62% 8%) 0%, hsl(241 56% 10%) 48%, hsl(240 50% 13%) 100%);
+}
+
+/* Faint geometric grid behind the composition, faded toward the edges. */
+.auth-root::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(hsl(var(--auth-grid-ink) / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--auth-grid-ink) / 0.05) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(72rem 44rem at 30% 30%, black 28%, transparent 74%);
+  -webkit-mask-image: radial-gradient(72rem 44rem at 30% 30%, black 28%, transparent 74%);
 }
 
 .auth-root :focus-visible {
@@ -614,24 +671,33 @@
 }
 
 .auth-card {
+  position: relative;
   border: 1px solid hsl(var(--landing-line));
-  background: hsl(var(--landing-surface));
+  background: hsl(var(--landing-surface) / 0.86);
   border-radius: 1.6rem;
-  box-shadow: 0 28px 70px hsl(var(--landing-shadow-color) / 0.1);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--auth-sheen) / 0.75),
+    0 30px 70px hsl(var(--landing-shadow-color) / 0.12);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
 }
 
 .auth-root.dark .auth-card {
-  box-shadow: 0 28px 70px hsl(var(--landing-shadow-color) / 0.42);
+  border-color: hsl(240 34% 25%);
+  background: linear-gradient(180deg, hsl(240 46% 15% / 0.82), hsl(241 42% 11% / 0.88));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--auth-sheen) / 0.08),
+    0 34px 84px hsl(243 70% 3% / 0.52);
 }
 
 .auth-input {
   width: 100%;
-  min-height: 3rem;
+  min-height: 3.05rem;
   border-radius: 0.85rem;
   border: 1px solid hsl(var(--landing-line));
-  background: hsl(var(--landing-surface));
+  background: hsl(var(--landing-surface-2));
   color: hsl(var(--landing-ink));
-  padding: 0 0.9rem;
+  padding: 0 0.95rem;
   font-size: 0.92rem;
   transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
 }
@@ -646,8 +712,9 @@
 
 .auth-input:focus {
   outline: none;
-  border-color: hsl(var(--landing-purple) / 0.65);
-  box-shadow: 0 0 0 4px hsl(var(--landing-purple) / 0.12);
+  border-color: hsl(var(--landing-purple) / 0.7);
+  background: hsl(var(--landing-surface));
+  box-shadow: 0 0 0 4px hsl(var(--landing-purple) / 0.14);
 }
 
 .auth-input[aria-invalid='true'] {
@@ -659,7 +726,11 @@
 }
 
 .auth-root.dark .auth-input {
-  background: hsl(var(--landing-surface-2));
+  background: hsl(241 45% 9% / 0.85);
+}
+
+.auth-root.dark .auth-input:focus {
+  background: hsl(241 45% 12% / 0.9);
 }
 
 .auth-btn {
@@ -668,20 +739,22 @@
   justify-content: center;
   gap: 0.55rem;
   width: 100%;
-  min-height: 3rem;
+  min-height: 3.05rem;
   border-radius: 999px;
-  background: hsl(var(--landing-purple-deep));
+  background: linear-gradient(135deg, hsl(248 78% 55%), hsl(257 74% 50%));
   color: hsl(var(--landing-primary-contrast));
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease, opacity 160ms ease;
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.2), 0 10px 26px hsl(250 80% 52% / 0.28);
+  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease, opacity 160ms ease, filter 160ms ease;
 }
 
 .auth-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 12px 28px hsl(var(--landing-shadow-color) / 0.22);
+  filter: brightness(1.06);
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.2), 0 14px 32px hsl(250 80% 52% / 0.36);
 }
 
 .auth-btn:active:not(:disabled) {
@@ -694,12 +767,274 @@
 }
 
 .auth-root.dark .auth-btn {
-  background: hsl(var(--landing-purple));
-  box-shadow: 0 12px 30px hsl(var(--landing-purple) / 0.2);
+  background: linear-gradient(135deg, hsl(251 95% 70%), hsl(247 92% 64%));
+  color: hsl(243 70% 10%);
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.32), 0 12px 30px hsl(250 92% 62% / 0.28);
 }
 
 .auth-hint {
   color: hsl(var(--landing-body));
+}
+
+/* Premium auth additions: depth on the card, resilient focus, honest motion.
+   Reduced motion is fully respected for every new animation. */
+.auth-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  border-radius: 1.6rem 1.6rem 0 0;
+  background: linear-gradient(90deg, transparent 4%, hsl(var(--landing-purple) / 0.4) 45%, hsl(var(--landing-cyan) / 0.3) 88%, transparent);
+  pointer-events: none;
+}
+
+/* Checkbox agreement control keeps native behavior; refine its box. */
+.auth-root input[type='checkbox'] {
+  border-radius: 0.35rem;
+}
+
+.auth-root input[type='checkbox']:focus-visible {
+  outline: 3px solid hsl(var(--landing-cyan) / 0.75);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-root .fluxrico-rise,
+  .auth-root .fluxrico-rise-delay-1,
+  .auth-root .fluxrico-rise-delay-2,
+  .auth-root .fluxrico-rise-delay-3 {
+    animation: none;
+  }
+
+  /* Decorative movement only — never state changes. */
+  .auth-root .fluxrico-dash,
+  .auth-root .fluxrico-drift,
+  .auth-root .fluxrico-drift-slow {
+    animation: none;
+  }
+
+  .auth-root .auth-btn:hover:not(:disabled) {
+    transform: none;
+    filter: none;
+  }
+
+  .auth-root .auth-input,
+  .auth-root .auth-btn,
+  .auth-root .auth-card {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .auth-root .auth-card {
+    transition: box-shadow 260ms ease;
+  }
+}
+
+/* ── Auth composition: two-zone desktop, focused mobile ───────────────── */
+
+.auth-shell {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  width: 100%;
+  max-width: 76rem;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .auth-shell {
+    padding-inline: 2rem;
+  }
+}
+
+/* Brand zone: desktop only; mobile gets the compact journey strip. */
+.auth-brand {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .auth-brand {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+}
+
+/* Contextual label chip above auth headings. */
+.auth-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--landing-purple) / 0.28);
+  background: hsl(var(--landing-purple-soft));
+  color: hsl(var(--landing-purple));
+  padding: 0.32rem 0.8rem;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.auth-chip::before {
+  content: '';
+  height: 0.32rem;
+  width: 0.32rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, hsl(var(--landing-purple)), hsl(var(--landing-cyan)));
+}
+
+/* Vertical journey rail in the brand zone — the product's CLARITY →
+   DIRECTION → NEXT MOVE → PROGRESS language, rendered as connected nodes. */
+.auth-journey-node {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.auth-journey-node::before {
+  content: '';
+  position: absolute;
+  left: 0.72rem;
+  top: 1.85rem;
+  bottom: -0.35rem;
+  width: 1px;
+  background: linear-gradient(180deg, hsl(var(--landing-purple) / 0.45), hsl(var(--landing-cyan) / 0.16));
+}
+
+.auth-journey-node:last-child::before {
+  display: none;
+}
+
+.auth-journey-dot {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  height: 1.45rem;
+  width: 1.45rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--landing-purple) / 0.4);
+  background: hsl(var(--landing-surface-2));
+  color: hsl(var(--landing-muted));
+}
+
+.auth-journey-node[data-state='done'] .auth-journey-dot {
+  border-color: transparent;
+  background: linear-gradient(135deg, hsl(var(--landing-purple) / 0.9), hsl(257 74% 52% / 0.9));
+  color: hsl(0 0% 100%);
+  box-shadow: 0 4px 14px hsl(250 80% 52% / 0.32);
+}
+
+.auth-journey-node[data-state='current'] .auth-journey-dot {
+  border-color: hsl(var(--landing-cyan) / 0.7);
+  background: hsl(var(--landing-cyan-soft));
+  color: hsl(var(--landing-cyan));
+  box-shadow: 0 0 0 4px hsl(var(--landing-cyan) / 0.12);
+}
+
+.auth-journey-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: hsl(var(--landing-ink));
+}
+
+.auth-journey-sub {
+  margin-top: 0.1rem;
+  font-size: 0.72rem;
+  line-height: 1rem;
+  color: hsl(var(--landing-muted));
+}
+
+.auth-journey-node[data-state='next'] .auth-journey-title {
+  color: hsl(var(--landing-muted));
+  font-weight: 600;
+}
+
+/* Horizontal journey strip — the mobile carrier of the same idea. */
+.auth-journey-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.auth-journey-strip li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.auth-journey-strip-dot {
+  height: 0.45rem;
+  width: 0.45rem;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--landing-purple) / 0.4);
+  background: hsl(var(--landing-surface-2));
+}
+
+.auth-journey-strip li[data-state='done'] .auth-journey-strip-dot {
+  border-color: transparent;
+  background: hsl(var(--landing-purple));
+}
+
+.auth-journey-strip li[data-state='current'] .auth-journey-strip-dot {
+  border-color: hsl(var(--landing-cyan) / 0.7);
+  background: hsl(var(--landing-cyan) / 0.35);
+  box-shadow: 0 0 0 3px hsl(var(--landing-cyan) / 0.14);
+}
+
+.auth-journey-strip-sep {
+  height: 1px;
+  width: 0.7rem;
+  background: hsl(var(--landing-line));
+}
+
+.auth-journey-strip-label {
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: hsl(var(--landing-muted));
+}
+
+.auth-journey-strip li[data-state='current'] .auth-journey-strip-label {
+  color: hsl(var(--landing-ink));
+}
+
+/* Status badge shared by success / error / progress states on the auth pages. */
+.auth-status-badge {
+  display: flex;
+  height: 3.4rem;
+  width: 3.4rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  position: relative;
+}
+
+.auth-status-badge::after {
+  content: '';
+  position: absolute;
+  inset: -0.28rem;
+  border-radius: 999px;
+  border: 1px dashed hsl(var(--landing-purple) / 0.35);
+}
+
+.auth-status-badge[data-tone='success']::after {
+  border-color: hsl(var(--landing-cyan) / 0.4);
+}
+
+.auth-status-badge[data-tone='error']::after {
+  border-color: hsl(0 68% 55% / 0.3);
 }
 
 /* ── Workspace appearance (light / dark / automatic) ────────────────────────
