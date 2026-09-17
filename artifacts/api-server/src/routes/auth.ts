@@ -13,6 +13,7 @@ import { HttpError, sendError } from "../lib/errors";
 import { hashPassword, verifyPassword } from "../lib/password";
 import { issueToken, consumeToken, consumeAllTokens } from "../lib/tokens";
 import { isEmailDeliveryConfigured, sendEmail, verificationEmail, passwordResetEmail } from "../lib/email";
+import { provisionTrialForNewUser } from "../lib/subscription";
 import {
   createSession,
   destroyCurrentSession,
@@ -96,6 +97,8 @@ router.post("/register", async (req, res) => {
     }
 
     const { token } = await issueToken(created.id);
+    // Phase 1 Pro: the 3-day trial starts server-side at registration.
+    await provisionTrialForNewUser(created.id);
     const verifyUrl = `${appBaseUrl(req)}/verify?token=${encodeURIComponent(token)}`;
     const delivery = await sendEmail({ ...verificationEmail(created.name, verifyUrl), to: created.email });
 

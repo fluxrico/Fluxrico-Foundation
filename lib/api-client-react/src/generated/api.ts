@@ -21,6 +21,8 @@ import type {
 
 import type {
   AuthUserResponse,
+  BillingConfigResponse,
+  BillingPortalSessionResponse,
   DeliveryStatusResponse,
   EmailRequest,
   ErrorResponse,
@@ -28,9 +30,11 @@ import type {
   LoginRequest,
   LoginResult,
   MessageResponse,
+  ProCapabilityResponse,
   RegisterRequest,
   RegisterResult,
   ResetPasswordRequest,
+  SubscriptionAccessResponse,
   VerifyEmailRequest
 } from './api.schemas';
 
@@ -719,5 +723,324 @@ export const useResetPassword = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getResetPasswordMutationOptions(options));
+    }
+
+export const getGetSubscriptionUrl = () => {
+
+
+
+
+  return `/api/subscription`
+}
+
+/**
+ * Server-derived subscription state for the authenticated user. The
+ * backend is the single source of truth; the client never computes or
+ * stores access. States: trialing (3-day trial active), pro (paid
+ * access active), expired (trial over, no paid access — data intact,
+ * Pro capabilities blocked).
+ * @summary Current subscription access state
+ */
+export const getSubscription = async ( options?: Parameters<typeof customFetch>[1]): Promise<SubscriptionAccessResponse> => {
+
+  return customFetch<SubscriptionAccessResponse>(getGetSubscriptionUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSubscriptionQueryKey = () => {
+    return [
+    `/api/subscription`
+    ] as const;
+    }
+
+
+export const getGetSubscriptionQueryOptions = <TData = Awaited<ReturnType<typeof getSubscription>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSubscription>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSubscriptionQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSubscription>>> = ({ signal }) => getSubscription({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSubscription>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSubscriptionQueryResult = NonNullable<Awaited<ReturnType<typeof getSubscription>>>
+export type GetSubscriptionQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Current subscription access state
+ */
+
+export function useGetSubscription<TData = Awaited<ReturnType<typeof getSubscription>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSubscription>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSubscriptionQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetProInsightsUrl = () => {
+
+
+
+
+  return `/api/pro/insights`
+}
+
+/**
+ * A harmless Pro-gated capability that proves the server-side Pro
+ * authorization guard end-to-end. Real Pro features replace this in a
+ * later phase. Requires a valid session, a verified email, and Pro
+ * access (paid or trialing — access policy is decided server-side).
+ * @summary Example Pro capability (foundation proof)
+ */
+export const getProInsights = async ( options?: Parameters<typeof customFetch>[1]): Promise<ProCapabilityResponse> => {
+
+  return customFetch<ProCapabilityResponse>(getGetProInsightsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProInsightsQueryKey = () => {
+    return [
+    `/api/pro/insights`
+    ] as const;
+    }
+
+
+export const getGetProInsightsQueryOptions = <TData = Awaited<ReturnType<typeof getProInsights>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProInsights>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProInsightsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProInsights>>> = ({ signal }) => getProInsights({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProInsights>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProInsightsQueryResult = NonNullable<Awaited<ReturnType<typeof getProInsights>>>
+export type GetProInsightsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Example Pro capability (foundation proof)
+ */
+
+export function useGetProInsights<TData = Awaited<ReturnType<typeof getProInsights>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProInsights>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProInsightsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetBillingConfigUrl = () => {
+
+
+
+
+  return `/api/billing/config`
+}
+
+/**
+ * Paddle configuration for the browser: the public client token,
+ * environment, real price IDs (from env config or live catalog
+ * discovery), and an honest checkout-availability verdict. Contains no
+ * secrets — the API key never leaves the server.
+ * @summary Frontend-safe billing configuration
+ */
+export const getBillingConfig = async ( options?: Parameters<typeof customFetch>[1]): Promise<BillingConfigResponse> => {
+
+  return customFetch<BillingConfigResponse>(getGetBillingConfigUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBillingConfigQueryKey = () => {
+    return [
+    `/api/billing/config`
+    ] as const;
+    }
+
+
+export const getGetBillingConfigQueryOptions = <TData = Awaited<ReturnType<typeof getBillingConfig>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBillingConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBillingConfigQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBillingConfig>>> = ({ signal }) => getBillingConfig({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBillingConfig>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBillingConfigQueryResult = NonNullable<Awaited<ReturnType<typeof getBillingConfig>>>
+export type GetBillingConfigQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Frontend-safe billing configuration
+ */
+
+export function useGetBillingConfig<TData = Awaited<ReturnType<typeof getBillingConfig>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBillingConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBillingConfigQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateBillingPortalSessionUrl = () => {
+
+
+
+
+  return `/api/billing/portal-session`
+}
+
+/**
+ * Starts a Paddle customer portal session for the signed-in user's
+ * linked billing customer so they can manage their subscription. Requires
+ * a verified session and Pro access; 409 when no billing profile is
+ * linked yet, 502 when the provider is temporarily unavailable.
+ * @summary Create a Paddle customer portal session
+ */
+export const createBillingPortalSession = async ( options?: Parameters<typeof customFetch>[1]): Promise<BillingPortalSessionResponse> => {
+
+  return customFetch<BillingPortalSessionResponse>(getCreateBillingPortalSessionUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCreateBillingPortalSessionMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBillingPortalSession>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createBillingPortalSession>>, TError,void, TContext> => {
+
+const mutationKey = ['createBillingPortalSession'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createBillingPortalSession>>, void> = () => {
+
+
+          return  createBillingPortalSession(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateBillingPortalSessionMutationResult = NonNullable<Awaited<ReturnType<typeof createBillingPortalSession>>>
+
+    export type CreateBillingPortalSessionMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Create a Paddle customer portal session
+ */
+export const useCreateBillingPortalSession = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBillingPortalSession>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createBillingPortalSession>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getCreateBillingPortalSessionMutationOptions(options));
     }
 

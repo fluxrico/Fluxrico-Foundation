@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: auth
     description: Authentication and account operations
+  - name: subscription
+    description: Subscription access state (trial / Pro / expired)
 paths:
   /healthz:
     get:
@@ -243,6 +245,138 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /subscription:
+    get:
+      operationId: getSubscription
+      tags: [subscription]
+      summary: Current subscription access state
+      description: |-
+        Server-derived subscription state for the authenticated user. The
+        backend is the single source of truth; the client never computes or
+        stores access. States: trialing (3-day trial active), pro (paid
+        access active), expired (trial over, no paid access — data intact,
+        Pro capabilities blocked).
+      responses:
+        "200":
+          description: The current access state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionAccessResponse"
+        "401":
+          description: No valid session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Email not verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /pro/insights:
+    get:
+      operationId: getProInsights
+      tags: [subscription]
+      summary: Example Pro capability (foundation proof)
+      description: |-
+        A harmless Pro-gated capability that proves the server-side Pro
+        authorization guard end-to-end. Real Pro features replace this in a
+        later phase. Requires a valid session, a verified email, and Pro
+        access (paid or trialing — access policy is decided server-side).
+      responses:
+        "200":
+          description: Capability wired and accessible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProCapabilityResponse"
+        "401":
+          description: No valid session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Email not verified, or Pro access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /billing/config:
+    get:
+      operationId: getBillingConfig
+      tags: [billing]
+      summary: Frontend-safe billing configuration
+      description: |-
+        Paddle configuration for the browser: the public client token,
+        environment, real price IDs (from env config or live catalog
+        discovery), and an honest checkout-availability verdict. Contains no
+        secrets — the API key never leaves the server.
+      responses:
+        "200":
+          description: Billing configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingConfigResponse"
+        "401":
+          description: No valid session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Email not verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /billing/portal-session:
+    post:
+      operationId: createBillingPortalSession
+      tags: [billing]
+      summary: Create a Paddle customer portal session
+      description: |-
+        Starts a Paddle customer portal session for the signed-in user's
+        linked billing customer so they can manage their subscription. Requires
+        a verified session and Pro access; 409 when no billing profile is
+        linked yet, 502 when the provider is temporarily unavailable.
+      responses:
+        "200":
+          description: Portal session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingPortalSessionResponse"
+        "401":
+          description: No valid session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Email not verified, or Pro access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: No billing customer linked to this account yet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Billing provider unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -405,3 +539,124 @@ components:
       required:
         - error
         - message
+
+    SubscriptionPlan:
+      type: object
+      description: The active paid plan; null until a real subscription exists.
+      properties:
+        interval:
+          type: string
+          enum: [monthly, yearly]
+        status:
+          type: string
+          enum: [active, canceled]
+        cancelAtPeriodEnd:
+          type: boolean
+      required:
+        - interval
+        - status
+        - cancelAtPeriodEnd
+
+    Subscription:
+      type: object
+      properties:
+        state:
+          type: string
+          enum: [trialing, pro, expired]
+          description: Server-derived access state. hasProAccess is true only for "pro".
+        hasProAccess:
+          type: boolean
+        trialDaysRemaining:
+          type: integer
+          description: Whole days left in the trial; 0 on the final day and when expired.
+        trialStartedAt:
+          type: string
+          format: date-time
+        trialEndsAt:
+          type: string
+          format: date-time
+        trialLengthDays:
+          type: integer
+        plan:
+          $ref: "#/components/schemas/SubscriptionPlan"
+        trialEndedAgoMs:
+          type: integer
+          format: int64
+          description: Milliseconds since the trial ended; null unless state is "expired".
+      required:
+        - state
+        - hasProAccess
+        - trialDaysRemaining
+        - trialStartedAt
+        - trialEndsAt
+        - trialLengthDays
+        - plan
+        - trialEndedAgoMs
+
+    SubscriptionAccessResponse:
+      type: object
+      properties:
+        subscription:
+          $ref: "#/components/schemas/Subscription"
+      required:
+        - subscription
+
+    ProCapabilityResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        capability:
+          type: string
+        message:
+          type: string
+      required:
+        - status
+        - capability
+        - message
+
+    BillingConfigResponse:
+      type: object
+      properties:
+        billing:
+          type: object
+          properties:
+            provider:
+              type: string
+              enum: [paddle]
+            environment:
+              type: string
+              enum: [sandbox, live]
+            clientToken:
+              type: string
+              nullable: true
+              description: Paddle client-side token (safe for the browser); null when unset.
+            prices:
+              type: object
+              properties:
+                monthly:
+                  type: string
+                  nullable: true
+                yearly:
+                  type: string
+                  nullable: true
+            checkoutAvailable:
+              type: boolean
+            reason:
+              type: string
+              nullable: true
+              description: Machine-readable reason when checkoutAvailable is false.
+          required: [provider, environment, prices, checkoutAvailable, reason]
+      required: [billing]
+
+    BillingPortalSessionResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        url:
+          type: string
+          description: The Paddle customer portal URL to open.
+      required:
+        - status
+        - url

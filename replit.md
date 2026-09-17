@@ -9,8 +9,27 @@ Fluxrico is a premium foundation experience for turning an unfinished idea into 
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
 - `pnpm --filter @workspace/fluxrico run dev` — run the Fluxrico web app (workflow supplies `PORT` and `BASE_PATH`)
+
+## Environment variables (server-side secrets — never expose to the browser)
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `DATABASE_URL` | Yes | Postgres connection string. Supabase → Project Settings → Database → Connection string (pooled URI recommended). |
+| `RESEND_API_KEY` | For email | Resend API key (starts with `re_`). Without it, outbound email is honestly skipped as `not-configured`. |
+| `EMAIL_FROM` | For email | Sender, e.g. `Fluxrico <no-reply@fluxrico.app>` — must be a verified sender/domain in Resend. Until a Fluxrico domain is verified, the sandbox uses Resend's testing sender `onboarding@resend.dev`; delivery is simulated for `delivered@resend.dev`-style test addresses. Switching to production is only a value change. |
+| `APP_BASE_URL` | Optional | Absolute origin used for verification/reset links when the request host is not the public origin. |
+| `RESEND_BASE_URL` | Optional | Override the Resend API base URL (rarely needed). |
+| `PADDLE_API_KEY` | For checkout | Server-only Paddle Billing API key (starts with `pdl_`). Never exposed to the browser; enables price discovery, webhook verification reads, and portal sessions. |
+| `PADDLE_CLIENT_TOKEN` | For checkout | Public Paddle client token (starts with `ctk_`) served to the browser via `GET /api/billing/config` for Paddle.js overlay checkout. |
+| `PADDLE_WEBHOOK_SECRET` | For webhooks | Paddle notification webhook secret. Required for `POST /api/billing/webhook` to accept any event; requests without a valid signature are rejected. |
+| `PADDLE_PRICE_ID_MONTHLY` / `PADDLE_PRICE_ID_YEARLY` | Optional | Explicit Fluxrico Pro price IDs (`pri_…`). When unset, the server discovers them from the live Paddle catalog by exact match (EUR 9.99/month, EUR 79.99/year) and never guesses. |
+| `PADDLE_ENV` | Optional | `sandbox` (default) or `live` — selects the Paddle API base URL. |
+| `PADDLE_API_BASE_URL` | Optional | Override the Paddle API base URL (used by the integration test harness). |
+
+Until `RESEND_API_KEY` + `EMAIL_FROM` are set, registration/reset succeed but deliver no email (API responses report `emailDelivered: false`). See `artifacts/api-server/src/lib/email.ts` for the boundary contract.
+
+Until the Paddle variables are set, `/pro` renders honestly with checkout disabled (the API reports the exact missing piece), and webhooks are rejected without a valid signature. The webhook URL to configure in Paddle is `POST /api/billing/webhook`; see `artifacts/api-server/src/lib/paddle.ts` and `artifacts/api-server/src/lib/billing.ts`.
 
 ## Stack
 

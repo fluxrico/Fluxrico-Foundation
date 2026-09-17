@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
@@ -33,7 +33,19 @@ app.use(
 // Cross-origin API callers must send and receive the session cookie.
 app.use(cors({ credentials: true }));
 app.use(cookieParser());
-app.use(express.json());
+
+// Capture the exact bytes Paddle signs BEFORE body parsing mutates them —
+// webhook signature verification requires the raw payload. Everything else
+// is parsed normally.
+app.use(
+  express.json({
+    verify: (req: Request, _res, buf) => {
+      if (req.originalUrl.includes("/api/billing/webhook")) {
+        (req as Request & { rawBody?: string }).rawBody = buf.toString("utf8");
+      }
+    },
+  }),
+);
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);

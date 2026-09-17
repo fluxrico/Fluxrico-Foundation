@@ -175,3 +175,78 @@ export const ResetPasswordResponse = zod.object({
 })
 
 
+/**
+ * Server-derived subscription state for the authenticated user. The
+ * backend is the single source of truth; the client never computes or
+ * stores access. States: trialing (3-day trial active), pro (paid
+ * access active), expired (trial over, no paid access — data intact,
+ * Pro capabilities blocked).
+ * @summary Current subscription access state
+ */
+export const GetSubscriptionResponse = zod.object({
+  "subscription": zod.object({
+  "state": zod.enum(['trialing', 'pro', 'expired']).describe('Server-derived access state. hasProAccess is true only for \"pro\".'),
+  "hasProAccess": zod.boolean(),
+  "trialDaysRemaining": zod.number().int().describe('Whole days left in the trial; 0 on the final day and when expired.'),
+  "trialStartedAt": zod.coerce.date(),
+  "trialEndsAt": zod.coerce.date(),
+  "trialLengthDays": zod.number().int(),
+  "plan": zod.object({
+  "interval": zod.enum(['monthly', 'yearly']),
+  "status": zod.enum(['active', 'canceled']),
+  "cancelAtPeriodEnd": zod.boolean()
+}).describe('The active paid plan; null until a real subscription exists.'),
+  "trialEndedAgoMs": zod.number().int().describe('Milliseconds since the trial ended; null unless state is \"expired\".')
+})
+})
+
+
+/**
+ * A harmless Pro-gated capability that proves the server-side Pro
+ * authorization guard end-to-end. Real Pro features replace this in a
+ * later phase. Requires a valid session, a verified email, and Pro
+ * access (paid or trialing — access policy is decided server-side).
+ * @summary Example Pro capability (foundation proof)
+ */
+export const GetProInsightsResponse = zod.object({
+  "status": zod.string(),
+  "capability": zod.string(),
+  "message": zod.string()
+})
+
+
+/**
+ * Paddle configuration for the browser: the public client token,
+ * environment, real price IDs (from env config or live catalog
+ * discovery), and an honest checkout-availability verdict. Contains no
+ * secrets — the API key never leaves the server.
+ * @summary Frontend-safe billing configuration
+ */
+export const GetBillingConfigResponse = zod.object({
+  "billing": zod.object({
+  "provider": zod.enum(['paddle']),
+  "environment": zod.enum(['sandbox', 'live']),
+  "clientToken": zod.string().nullish().describe('Paddle client-side token (safe for the browser); null when unset.'),
+  "prices": zod.object({
+  "monthly": zod.string().nullish(),
+  "yearly": zod.string().nullish()
+}),
+  "checkoutAvailable": zod.boolean(),
+  "reason": zod.string().nullable().describe('Machine-readable reason when checkoutAvailable is false.')
+})
+})
+
+
+/**
+ * Starts a Paddle customer portal session for the signed-in user's
+ * linked billing customer so they can manage their subscription. Requires
+ * a verified session and Pro access; 409 when no billing profile is
+ * linked yet, 502 when the provider is temporarily unavailable.
+ * @summary Create a Paddle customer portal session
+ */
+export const CreateBillingPortalSessionResponse = zod.object({
+  "status": zod.string(),
+  "url": zod.string().describe('The Paddle customer portal URL to open.')
+})
+
+

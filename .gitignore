@@ -37,6 +37,11 @@ yarn-error.log
 testem.log
 /typings
 
+# Local environment files — secrets only, never committed
+.env
+.env.local
+.env.*.local
+
 # System Files
 .DS_Store
 Thumbs.db

@@ -8,6 +8,12 @@
 
 export * from './authUser';
 export * from './authUserResponse';
+export * from './billingConfigResponse';
+export * from './billingConfigResponseBilling';
+export * from './billingConfigResponseBillingEnvironment';
+export * from './billingConfigResponseBillingPrices';
+export * from './billingConfigResponseBillingProvider';
+export * from './billingPortalSessionResponse';
 export * from './deliveryStatusResponse';
 export * from './emailRequest';
 export * from './errorResponse';
@@ -15,7 +21,14 @@ export * from './healthStatus';
 export * from './loginRequest';
 export * from './loginResult';
 export * from './messageResponse';
+export * from './proCapabilityResponse';
 export * from './registerRequest';
 export * from './registerResult';
 export * from './resetPasswordRequest';
+export * from './subscription';
+export * from './subscriptionAccessResponse';
+export * from './subscriptionPlan';
+export * from './subscriptionPlanInterval';
+export * from './subscriptionPlanStatus';
+export * from './subscriptionState';
 export * from './verifyEmailRequest';
