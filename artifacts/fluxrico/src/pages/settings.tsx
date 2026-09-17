@@ -18,8 +18,10 @@ import { Switch } from '@/components/ui/switch';
 import { useLandingTheme } from '@/components/landing/theme';
 import type { ThemePreference } from '@/components/landing/theme';
 import { useAuthState } from '@/lib/auth-state';
+import { useSubscriptionState } from '@/lib/subscription-state';
 import { useWorkspaceState } from '@/lib/workspace-state';
 import type { WorkspaceSettings } from '@/lib/workspace-state';
+import { createBillingPortalSession } from '@workspace/api-client-react';
 
 // ── Settings vocabulary ──────────────────────────────────────────────────────
 // Settings answers one question: how do I want Fluxrico to work? Profile (who
@@ -232,8 +234,11 @@ function AppearanceSelector() {
 export default function Settings() {
   const { settings, updateSettings } = useWorkspaceState();
   const { user, signOut } = useAuthState();
+  const { subscription, status: subscriptionStatus, refresh } = useSubscriptionState();
   const [, navigate] = useLocation();
   const activeSection = useActiveSection(SECTION_IDS);
+  const [portalBusy, setPortalBusy] = useState(false);
+  const [portalError, setPortalError] = useState<string | null>(null);
 
   // Identity follows the signed-in user when one exists, then the workspace's
   // own settings — the same precedence Profile reads.
@@ -245,6 +250,24 @@ export default function Settings() {
     // redirects; explicit navigation keeps the destination deterministic.
     await signOut();
     navigate('/signin');
+  };
+
+  // Real Paddle customer portal: the server creates the session for the
+  // signed-in user's linked billing customer; nothing is faked client-side.
+  const openBillingPortal = async () => {
+    setPortalError(null);
+    setPortalBusy(true);
+    try {
+      const result = await createBillingPortalSession();
+      window.open(result.url, '_blank', 'noopener');
+      await refresh();
+    } catch {
+      setPortalError(
+        'Billing portal is unavailable right now. If you just subscribed, try again in a moment.',
+      );
+    } finally {
+      setPortalBusy(false);
+    }
   };
 
   return (
@@ -372,6 +395,54 @@ export default function Settings() {
                 <p className="mt-4 text-xs leading-5 text-[#888AA4]">
                   Details are stored locally in this preview and are not sent anywhere.
                 </p>
+
+                {/* Pro / trial status — mirrors the server-derived subscription state. */}
+                {subscriptionStatus === 'ready' && subscription && (
+                  <div
+                    className="mt-5 flex flex-col gap-3 rounded-2xl border border-[#ECECF3] bg-[#FAFAFE] p-4 sm:flex-row sm:items-center sm:justify-between"
+                    data-testid="settings-pro-status"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-[#343568]">Fluxrico Pro</p>
+                      <p className="mt-1 text-xs leading-5 text-[#8587A3]">
+                        {subscription.state === 'pro' &&
+                          `Active — ${subscription.plan?.interval === 'yearly' ? 'annual' : 'monthly'} plan.${
+                            subscription.plan?.cancelAtPeriodEnd
+                              ? ' Renews off — access continues until the current period ends.'
+                              : ''
+                          } Manage billing with Paddle anytime.`}
+                        {subscription.state === 'trialing' &&
+                          `Free trial — ${subscription.trialDaysRemaining} ${subscription.trialDaysRemaining === 1 ? 'day' : 'days'} remaining of ${subscription.trialLengthDays}.`}
+                        {subscription.state === 'expired' &&
+                          'Trial ended — your journey data is intact. Pro unlocks the advanced capabilities.'}
+                      </p>
+                    </div>
+                    {subscription.state !== 'pro' ? (
+                      <Link
+                        href="/pro"
+                        className={`${QUIET_BUTTON} shrink-0 justify-center`}
+                        data-testid="link-settings-upgrade"
+                      >
+                        {subscription.state === 'expired' ? 'See Pro' : 'Upgrade to Pro'}
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => void openBillingPortal()}
+                        disabled={portalBusy}
+                        className={`${QUIET_BUTTON} shrink-0 justify-center ${portalBusy ? 'opacity-60' : ''}`}
+                        data-testid="button-settings-manage-billing"
+                      >
+                        {portalBusy ? 'Opening…' : 'Manage billing'}
+                      </button>
+                    )}
+                    {portalError != null && (
+                      <p className="text-xs leading-5 text-[#A05B2E]" role="alert" data-testid="settings-portal-error">
+                        {portalError}
+                      </p>
+                    )}
+                  </div>
+                )}
               </SettingsSection>
 
               {/* 2. Appearance — the existing shared theme preference. */}

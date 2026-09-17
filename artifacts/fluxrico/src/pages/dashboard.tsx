@@ -1,4 +1,4 @@
-import { useLocation } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { AppShell, PageHeader } from '@/components/app-shell';
 import { CurrentStageCard } from '@/components/current-stage-card';
 import { DirectionCard } from '@/components/direction-card';
@@ -10,6 +10,7 @@ import { RecentActivity } from '@/components/recent-activity';
 import { RoadmapProgress } from '@/components/roadmap-progress';
 import { useJourney } from '@/hooks/use-journey';
 import { useAuthState } from '@/lib/auth-state';
+import { useSubscriptionState } from '@/lib/subscription-state';
 import { useWorkspaceState } from '@/lib/workspace-state';
 
 export default function Dashboard() {
@@ -17,6 +18,7 @@ export default function Dashboard() {
   const journey = useJourney();
   const { settings, recordNextMoveStarted, hasStartedNextMove } = useWorkspaceState();
   const { user } = useAuthState();
+  const { subscription, isExpired } = useSubscriptionState();
   // A user without Navigator answers sees the new-user state; completing
   // Navigator personalizes the dashboard for the rest of the session.
   const newUser = !journey.hasNavigatorData;
@@ -97,6 +99,29 @@ export default function Dashboard() {
                 onEdit={() => setLocation('/profile')}
               />
             </div>
+
+            {/* Expired-trial state: calm, honest, never blocking — the journey
+                data remains; Pro-only capabilities explain themselves when used. */}
+            {isExpired && (
+              <div
+                className="mt-5 flex flex-col gap-3 rounded-[1.65rem] border border-[#F0DFD2] bg-[#FDFAF7] p-5 sm:flex-row sm:items-center sm:justify-between"
+                data-testid="banner-trial-expired"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-[#7A5232]">Your free trial has ended.</p>
+                  <p className="mt-1 text-xs leading-5 text-[#8A7460]">
+                    Your journey, roadmap, and library are exactly as you left them. Pro keeps the advanced capabilities moving.
+                  </p>
+                </div>
+                <Link
+                  href="/pro"
+                  className="fluxrico-focus inline-flex min-h-10 shrink-0 items-center justify-center rounded-full bg-[#4C37EB] px-5 text-[0.64rem] font-bold uppercase tracking-[0.13em] text-white transition-colors hover:bg-[#3F2CC9]"
+                  data-testid="banner-trial-expired-upgrade"
+                >
+                  See Pro
+                </Link>
+              </div>
+            )}
 
             {/* Level 4 — what changed, and a quiet nudge. */}
             <div className="mt-5 grid gap-5 lg:grid-cols-[1.18fr_0.82fr]">

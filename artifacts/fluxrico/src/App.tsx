@@ -19,9 +19,11 @@ import Library from '@/pages/library';
 import Notifications from '@/pages/notifications';
 import Profile from '@/pages/profile';
 import Settings from '@/pages/settings';
+import Pro from '@/pages/pro';
 import { NavigatorStateProvider } from '@/components/navigator-state';
 import { WorkspaceStateProvider } from '@/lib/workspace-state';
 import { AuthStateProvider } from '@/lib/auth-state';
+import { SubscriptionStateProvider } from '@/lib/subscription-state';
 import { RequireAuth } from '@/components/require-auth';
 
 const queryClient = new QueryClient();
@@ -37,6 +39,7 @@ function WorkspaceRoutes() {
       <Route path="/notifications" component={Notifications} />
       <Route path="/profile" component={Profile} />
       <Route path="/settings" component={Settings} />
+      <Route path="/pro" component={Pro} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -52,11 +55,13 @@ function WorkspaceRoutes() {
 function AuthenticatedWorkspace() {
   return (
     <RequireAuth>
-      <NavigatorStateProvider>
-        <WorkspaceStateProvider>
-          <WorkspaceRoutes />
-        </WorkspaceStateProvider>
-      </NavigatorStateProvider>
+      <SubscriptionStateProvider>
+        <NavigatorStateProvider>
+          <WorkspaceStateProvider>
+            <WorkspaceRoutes />
+          </WorkspaceStateProvider>
+        </NavigatorStateProvider>
+      </SubscriptionStateProvider>
     </RequireAuth>
   );
 }

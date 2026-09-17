@@ -96,3 +96,105 @@ export interface ErrorResponse {
   message: string;
 }
 
+export type SubscriptionPlanInterval = typeof SubscriptionPlanInterval[keyof typeof SubscriptionPlanInterval];
+
+
+export const SubscriptionPlanInterval = {
+  monthly: 'monthly',
+  yearly: 'yearly',
+} as const;
+
+export type SubscriptionPlanStatus = typeof SubscriptionPlanStatus[keyof typeof SubscriptionPlanStatus];
+
+
+export const SubscriptionPlanStatus = {
+  active: 'active',
+  canceled: 'canceled',
+} as const;
+
+/**
+ * The active paid plan; null until a real subscription exists.
+ */
+export interface SubscriptionPlan {
+  interval: SubscriptionPlanInterval;
+  status: SubscriptionPlanStatus;
+  cancelAtPeriodEnd: boolean;
+}
+
+/**
+ * Server-derived access state. hasProAccess is true only for "pro".
+ */
+export type SubscriptionState = typeof SubscriptionState[keyof typeof SubscriptionState];
+
+
+export const SubscriptionState = {
+  trialing: 'trialing',
+  pro: 'pro',
+  expired: 'expired',
+} as const;
+
+export interface Subscription {
+  /** Server-derived access state. hasProAccess is true only for "pro". */
+  state: SubscriptionState;
+  hasProAccess: boolean;
+  /** Whole days left in the trial; 0 on the final day and when expired. */
+  trialDaysRemaining: number;
+  trialStartedAt: string;
+  trialEndsAt: string;
+  trialLengthDays: number;
+  plan: SubscriptionPlan;
+  /** Milliseconds since the trial ended; null unless state is "expired". */
+  trialEndedAgoMs: number;
+}
+
+export interface SubscriptionAccessResponse {
+  subscription: Subscription;
+}
+
+export interface ProCapabilityResponse {
+  status: string;
+  capability: string;
+  message: string;
+}
+
+export type BillingConfigResponseBillingProvider = typeof BillingConfigResponseBillingProvider[keyof typeof BillingConfigResponseBillingProvider];
+
+
+export const BillingConfigResponseBillingProvider = {
+  paddle: 'paddle',
+} as const;
+
+export type BillingConfigResponseBillingEnvironment = typeof BillingConfigResponseBillingEnvironment[keyof typeof BillingConfigResponseBillingEnvironment];
+
+
+export const BillingConfigResponseBillingEnvironment = {
+  sandbox: 'sandbox',
+  live: 'live',
+} as const;
+
+export type BillingConfigResponseBillingPrices = {
+  monthly?: string | null;
+  yearly?: string | null;
+};
+
+export type BillingConfigResponseBilling = {
+  provider: BillingConfigResponseBillingProvider;
+  environment: BillingConfigResponseBillingEnvironment;
+  /** Paddle client-side token (safe for the browser); null when unset. */
+  clientToken?: string | null;
+  prices: BillingConfigResponseBillingPrices;
+  checkoutAvailable: boolean;
+  /** Machine-readable reason when checkoutAvailable is false. */
+  reason: string | null;
+};
+
+export interface BillingConfigResponse {
+  billing: BillingConfigResponseBilling;
+}
+
+export interface BillingPortalSessionResponse {
+  status: string;
+  /** The Paddle customer portal URL to open. */
+  url: string;
+}
+
