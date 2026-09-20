@@ -20,13 +20,18 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AccountExport,
   AuthUserResponse,
   BillingConfigResponse,
   BillingPortalSessionResponse,
+  ChangePasswordRequest,
   DeliveryStatusResponse,
   EmailRequest,
   ErrorResponse,
   HealthStatus,
+  JourneyResponse,
+  JourneySaveRequest,
+  JourneySaveResult,
   LoginRequest,
   LoginResult,
   MessageResponse,
@@ -34,7 +39,10 @@ import type {
   RegisterRequest,
   RegisterResult,
   ResetPasswordRequest,
+  SessionListResponse,
+  SessionRevokeResult,
   SubscriptionAccessResponse,
+  UpdateAccountRequest,
   VerifyEmailRequest
 } from './api.schemas';
 
@@ -1042,5 +1050,614 @@ export const useCreateBillingPortalSession = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getCreateBillingPortalSessionMutationOptions(options));
+    }
+
+export const getGetJourneyUrl = () => {
+
+
+
+
+  return `/api/journey`
+}
+
+/**
+ * Returns the persisted journey/workspace payload for the authenticated
+ * user, or `{ journey: null }` when nothing has been saved yet. Every
+ * workspace surface reads this instead of keeping its own store.
+ * @summary Load the signed-in user's journey state
+ */
+export const getJourney = async ( options?: Parameters<typeof customFetch>[1]): Promise<JourneyResponse> => {
+
+  return customFetch<JourneyResponse>(getGetJourneyUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetJourneyQueryKey = () => {
+    return [
+    `/api/journey`
+    ] as const;
+    }
+
+
+export const getGetJourneyQueryOptions = <TData = Awaited<ReturnType<typeof getJourney>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJourney>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetJourneyQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJourney>>> = ({ signal }) => getJourney({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getJourney>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetJourneyQueryResult = NonNullable<Awaited<ReturnType<typeof getJourney>>>
+export type GetJourneyQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Load the signed-in user's journey state
+ */
+
+export function useGetJourney<TData = Awaited<ReturnType<typeof getJourney>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJourney>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetJourneyQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveJourneyUrl = () => {
+
+
+
+
+  return `/api/journey`
+}
+
+/**
+ * Validates and stores the journey/workspace payload server-side. The
+ * payload shape is enforced by the server schema; unknown fields are
+ * rejected so the stored state can always be trusted. Server stamps
+ * updatedAt; client values for it are ignored.
+ * @summary Save the signed-in user's journey state
+ */
+export const saveJourney = async (journeySaveRequest: JourneySaveRequest, options?: Parameters<typeof customFetch>[1]): Promise<JourneySaveResult> => {
+
+  return customFetch<JourneySaveResult>(getSaveJourneyUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(journeySaveRequest)
+  }
+);}
+
+
+
+
+
+export const getSaveJourneyMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveJourney>>, TError,{data: BodyType<JourneySaveRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveJourney>>, TError,{data: BodyType<JourneySaveRequest>}, TContext> => {
+
+const mutationKey = ['saveJourney'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveJourney>>, {data: BodyType<JourneySaveRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveJourney(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveJourneyMutationResult = NonNullable<Awaited<ReturnType<typeof saveJourney>>>
+    export type SaveJourneyMutationBody = BodyType<JourneySaveRequest>
+    export type SaveJourneyMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Save the signed-in user's journey state
+ */
+export const useSaveJourney = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveJourney>>, TError,{data: BodyType<JourneySaveRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveJourney>>,
+        TError,
+        {data: BodyType<JourneySaveRequest>},
+        TContext
+      > => {
+      return useMutation(getSaveJourneyMutationOptions(options));
+    }
+
+export const getUpdateAccountUrl = () => {
+
+
+
+
+  return `/api/account/me`
+}
+
+/**
+ * Updates the account's display name server-side. Email changes are not
+ * offered in this phase (they require a verified-change flow); the
+ * response includes the updated user.
+ * @summary Update the signed-in user's name
+ */
+export const updateAccount = async (updateAccountRequest: UpdateAccountRequest, options?: Parameters<typeof customFetch>[1]): Promise<AuthUserResponse> => {
+
+  return customFetch<AuthUserResponse>(getUpdateAccountUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateAccountRequest)
+  }
+);}
+
+
+
+
+
+export const getUpdateAccountMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAccount>>, TError,{data: BodyType<UpdateAccountRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAccount>>, TError,{data: BodyType<UpdateAccountRequest>}, TContext> => {
+
+const mutationKey = ['updateAccount'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAccount>>, {data: BodyType<UpdateAccountRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateAccount(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAccountMutationResult = NonNullable<Awaited<ReturnType<typeof updateAccount>>>
+    export type UpdateAccountMutationBody = BodyType<UpdateAccountRequest>
+    export type UpdateAccountMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Update the signed-in user's name
+ */
+export const useUpdateAccount = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAccount>>, TError,{data: BodyType<UpdateAccountRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAccount>>,
+        TError,
+        {data: BodyType<UpdateAccountRequest>},
+        TContext
+      > => {
+      return useMutation(getUpdateAccountMutationOptions(options));
+    }
+
+export const getChangePasswordUrl = () => {
+
+
+
+
+  return `/api/account/password`
+}
+
+/**
+ * Requires the current password, sets a new one, and revokes every
+ * other session (the current device stays signed in).
+ * @summary Change the password of the signed-in user
+ */
+export const changePassword = async (changePasswordRequest: ChangePasswordRequest, options?: Parameters<typeof customFetch>[1]): Promise<MessageResponse> => {
+
+  return customFetch<MessageResponse>(getChangePasswordUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(changePasswordRequest)
+  }
+);}
+
+
+
+
+
+export const getChangePasswordMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changePassword>>, TError,{data: BodyType<ChangePasswordRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changePassword>>, TError,{data: BodyType<ChangePasswordRequest>}, TContext> => {
+
+const mutationKey = ['changePassword'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changePassword>>, {data: BodyType<ChangePasswordRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  changePassword(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangePasswordMutationResult = NonNullable<Awaited<ReturnType<typeof changePassword>>>
+    export type ChangePasswordMutationBody = BodyType<ChangePasswordRequest>
+    export type ChangePasswordMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Change the password of the signed-in user
+ */
+export const useChangePassword = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changePassword>>, TError,{data: BodyType<ChangePasswordRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof changePassword>>,
+        TError,
+        {data: BodyType<ChangePasswordRequest>},
+        TContext
+      > => {
+      return useMutation(getChangePasswordMutationOptions(options));
+    }
+
+export const getListSessionsUrl = () => {
+
+
+
+
+  return `/api/account/sessions`
+}
+
+/**
+ * Returns the account's non-expired sessions, newest first, including
+ * whether each row is the current one. Only metadata — never session ids.
+ * @summary List the account's active sessions
+ */
+export const listSessions = async ( options?: Parameters<typeof customFetch>[1]): Promise<SessionListResponse> => {
+
+  return customFetch<SessionListResponse>(getListSessionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSessionsQueryKey = () => {
+    return [
+    `/api/account/sessions`
+    ] as const;
+    }
+
+
+export const getListSessionsQueryOptions = <TData = Awaited<ReturnType<typeof listSessions>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSessionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSessions>>> = ({ signal }) => listSessions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSessionsQueryResult = NonNullable<Awaited<ReturnType<typeof listSessions>>>
+export type ListSessionsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List the account's active sessions
+ */
+
+export function useListSessions<TData = Awaited<ReturnType<typeof listSessions>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSessionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRevokeOtherSessionsUrl = () => {
+
+
+
+
+  return `/api/account/sessions/others`
+}
+
+/**
+ * Revokes all of the account's sessions except the current one.
+ * @summary Sign out every other session
+ */
+export const revokeOtherSessions = async ( options?: Parameters<typeof customFetch>[1]): Promise<SessionRevokeResult> => {
+
+  return customFetch<SessionRevokeResult>(getRevokeOtherSessionsUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRevokeOtherSessionsMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeOtherSessions>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeOtherSessions>>, TError,void, TContext> => {
+
+const mutationKey = ['revokeOtherSessions'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeOtherSessions>>, void> = () => {
+
+
+          return  revokeOtherSessions(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeOtherSessionsMutationResult = NonNullable<Awaited<ReturnType<typeof revokeOtherSessions>>>
+
+    export type RevokeOtherSessionsMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Sign out every other session
+ */
+export const useRevokeOtherSessions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeOtherSessions>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeOtherSessions>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRevokeOtherSessionsMutationOptions(options));
+    }
+
+export const getExportAccountDataUrl = () => {
+
+
+
+
+  return `/api/account/export`
+}
+
+/**
+ * Returns a single JSON document with the account profile, subscription
+ * state, journey data, and webhook event count. Intended for the
+ * Settings data-export control.
+ * @summary Export the account's data as JSON
+ */
+export const exportAccountData = async ( options?: Parameters<typeof customFetch>[1]): Promise<AccountExport> => {
+
+  return customFetch<AccountExport>(getExportAccountDataUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportAccountDataQueryKey = () => {
+    return [
+    `/api/account/export`
+    ] as const;
+    }
+
+
+export const getExportAccountDataQueryOptions = <TData = Awaited<ReturnType<typeof exportAccountData>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportAccountData>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportAccountDataQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportAccountData>>> = ({ signal }) => exportAccountData({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportAccountData>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ExportAccountDataQueryResult = NonNullable<Awaited<ReturnType<typeof exportAccountData>>>
+export type ExportAccountDataQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Export the account's data as JSON
+ */
+
+export function useExportAccountData<TData = Awaited<ReturnType<typeof exportAccountData>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportAccountData>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getExportAccountDataQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDeleteAccountUrl = () => {
+
+
+
+
+  return `/api/account`
+}
+
+/**
+ * Permanently deletes the user row; every dependent row (sessions,
+ * tokens, subscription, journey) is removed by ON DELETE CASCADE.
+ * Destroys the current session and clears the cookie. Billing must be
+ * cancelled by the user in the Paddle portal first; Paddle retains its
+ * own customer/transaction records as the payment processor.
+ * @summary Delete the account and all of its data
+ */
+export const deleteAccount = async ( options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteAccountUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteAccountMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAccount>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAccount>>, TError,void, TContext> => {
+
+const mutationKey = ['deleteAccount'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAccount>>, void> = () => {
+
+
+          return  deleteAccount(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAccountMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAccount>>>
+
+    export type DeleteAccountMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Delete the account and all of its data
+ */
+export const useDeleteAccount = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAccount>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAccount>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDeleteAccountMutationOptions(options));
     }
 

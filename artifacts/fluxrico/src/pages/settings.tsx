@@ -1,7 +1,9 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import {
   BellRing,
   Database,
+  Download,
+  KeyRound,
   LogOut,
   Monitor,
   Moon,
@@ -9,8 +11,19 @@ import {
   SlidersHorizontal,
   Sun,
   SunMoon,
+  Trash2,
   UserRound,
 } from 'lucide-react';
+import {
+  changePassword,
+  deleteAccount,
+  exportAccountData,
+  listSessions,
+  revokeOtherSessions,
+  updateAccount,
+  ApiError,
+} from '@workspace/api-client-react';
+import type { SessionInfo, AccountExport } from '@workspace/api-client-react';
 import type { LucideIcon } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { AppShell, PageHeader } from '@/components/app-shell';
@@ -71,6 +84,24 @@ const SECTIONS: { id: SectionId; label: string; icon: LucideIcon }[] = [
 ];
 
 const SECTION_IDS = SECTIONS.map((section) => section.id);
+
+function apiErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError && typeof error.data === 'object' && error.data != null) {
+    const message = (error.data as { message?: unknown }).message;
+    if (typeof message === 'string' && message.length > 0) return message;
+  }
+  return fallback;
+}
+
+function downloadJson(filename: string, data: unknown) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
 
 const QUIET_BUTTON =
   'fluxrico-focus inline-flex min-h-10 items-center gap-2 rounded-full border border-[#D4D5E8] bg-white px-4 text-[0.64rem] font-bold uppercase tracking-[0.13em] text-[#5B56B5] transition-colors hover:border-[#8E88E1]';
@@ -229,21 +260,349 @@ function AppearanceSelector() {
   );
 }
 
+// ── Account self-service ───────────────────────────────────────────────────
+// Thin clients over the real /api/account endpoints — server-validated,
+// session-aware, no local fakes.
+
+const FIELD_CLASS =
+  'fluxrico-focus mt-2 w-full rounded-xl border border-[#DADBEA] bg-[#FAFAFE] px-4 py-3 text-sm font-semibold text-[#25265A] outline-none transition-colors placeholder:text-[#A0A2B7] focus:border-[#AAA5E5] focus:bg-white';
+
+/** Display name: edits locally, saves to the server account record. */
+function NameField({ name, email, onSaved }: { name: string; email: string; onSaved: (name: string) => void }) {
+  const [draft, setDraft] = useState(name);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const dirty = draft.trim() !== name && draft.trim().length >= 2;
+
+  useEffect(() => {
+    setDraft(name);
+  }, [name]);
+
+  const save = async () => {
+    setError(null);
+    setSaved(false);
+    setBusy(true);
+    try {
+      await updateAccount({ name: draft.trim() });
+      onSaved(draft.trim());
+      setSaved(true);
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Could not save your name. Try again in a moment.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div>
+      <div className="grid gap-5 sm:grid-cols-2">
+        <label className="block">
+          <span className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#8587A3]">Display name</span>
+          <input
+            type="text"
+            value={draft}
+            onChange={(event) => {
+              setDraft(event.target.value);
+              setSaved(false);
+            }}
+            maxLength={120}
+            className={FIELD_CLASS}
+            data-testid="input-settings-name"
+          />
+        </label>
+        <label className="block">
+          <span className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#8587A3]">Email</span>
+          <input
+            type="email"
+            value={email}
+            readOnly
+            disabled
+            className={`${FIELD_CLASS} cursor-not-allowed opacity-70`}
+            aria-describedby="settings-email-readonly"
+            data-testid="input-settings-email"
+          />
+        </label>
+      </div>
+      <p id="settings-email-readonly" className="mt-2 text-xs leading-5 text-[#888AA4]">
+        Your email is your sign-in identity and cannot be changed here yet.
+      </p>
+      <div className="mt-3 flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => void save()}
+          disabled={!dirty || busy}
+          className={`${QUIET_BUTTON} ${!dirty || busy ? 'opacity-50' : ''}`}
+          data-testid="button-settings-save-name"
+        >
+          {busy ? 'Saving…' : 'Save name'}
+        </button>
+        {saved && (
+          <span className="text-xs font-bold text-[#3F8A67]" role="status" data-testid="settings-name-saved">
+            Saved
+          </span>
+        )}
+        {error && (
+          <span className="text-xs leading-5 text-[#A05B2E]" role="alert">
+            {error}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Password change: server verifies the current password and rotates it. */
+function PasswordChangeCard() {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  const valid =
+    currentPassword.length > 0 &&
+    newPassword.length >= 8 &&
+    newPassword === confirmPassword;
+
+  const submit = async () => {
+    setError(null);
+    setBusy(true);
+    try {
+      await changePassword({ currentPassword, newPassword });
+      setDone(true);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Could not change your password. Check your current password and try again.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-[#ECECF3] bg-[#FAFAFE] p-5">
+      <div className="flex items-center gap-2.5">
+        <KeyRound size={15} strokeWidth={1.8} className="text-[#6258D0]" aria-hidden="true" />
+        <p className="text-sm font-bold text-[#343568]">Change password</p>
+      </div>
+      <p className="mt-1 text-xs leading-5 text-[#8587A3]">
+        Changing your password signs out every other session.
+      </p>
+      {done ? (
+        <p className="mt-4 text-sm font-bold text-[#3F8A67]" role="status" data-testid="settings-password-done">
+          Password changed. Other sessions were signed out.
+        </p>
+      ) : (
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <label className="block">
+            <span className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#8587A3]">Current password</span>
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              autoComplete="current-password"
+              className={FIELD_CLASS}
+              data-testid="input-settings-current-password"
+            />
+          </label>
+          <label className="block">
+            <span className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#8587A3]">New password</span>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              autoComplete="new-password"
+              minLength={8}
+              className={FIELD_CLASS}
+              data-testid="input-settings-new-password"
+            />
+          </label>
+          <label className="block">
+            <span className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#8587A3]">Repeat new password</span>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              autoComplete="new-password"
+              className={FIELD_CLASS}
+              data-testid="input-settings-confirm-password"
+            />
+          </label>
+        </div>
+      )}
+      {!done && (
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => void submit()}
+            disabled={!valid || busy}
+            className={`${QUIET_BUTTON} ${!valid || busy ? 'opacity-50' : ''}`}
+            data-testid="button-settings-change-password"
+          >
+            {busy ? 'Updating…' : 'Update password'}
+          </button>
+          {newPassword.length > 0 && newPassword.length < 8 && (
+            <span className="text-xs text-[#A05B2E]">At least 8 characters.</span>
+          )}
+          {confirmPassword.length > 0 && newPassword !== confirmPassword && (
+            <span className="text-xs text-[#A05B2E]">Passwords don’t match.</span>
+          )}
+          {error && (
+            <span className="text-xs leading-5 text-[#A05B2E]" role="alert">
+              {error}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Active sessions list — read from the server, with revoke-others. */
+function SessionsCard() {
+  const [sessions, setSessions] = useState<SessionInfo[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [revoked, setRevoked] = useState<number | null>(null);
+
+  const load = useCallback(async () => {
+    setError(null);
+    try {
+      const result = await listSessions();
+      setSessions(result.sessions);
+    } catch {
+      setError('Could not load your sessions.');
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const revokeOthers = async () => {
+    setError(null);
+    setBusy(true);
+    try {
+      const result = await revokeOtherSessions();
+      setRevoked(result.revoked);
+      await load();
+    } catch {
+      setError('Could not sign out other sessions. Try again in a moment.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+
+  return (
+    <div className="rounded-2xl border border-[#ECECF3] bg-[#FAFAFE] p-5">
+      <p className="text-sm font-bold text-[#343568]">Active sessions</p>
+      <p className="mt-1 text-xs leading-5 text-[#8587A3]">
+        Each signed-in browser gets its own session. Signing out elsewhere revokes those sessions on the server.
+      </p>
+      {error && (
+        <p className="mt-3 text-xs leading-5 text-[#A05B2E]" role="alert">
+          {error}
+        </p>
+      )}
+      {sessions == null ? (
+        <p className="mt-4 text-xs text-[#8587A3]">Loading sessions…</p>
+      ) : (
+        <ul className="mt-4 space-y-2.5" data-testid="settings-session-list">
+          {sessions.map((session) => (
+            <li
+              key={session.id}
+              className="flex flex-col gap-1 rounded-xl border border-[#ECECF3] bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-[#343568]">
+                  {session.current ? 'This browser' : 'Another session'}
+                  {session.current && (
+                    <span className="ml-2 rounded-full bg-[#EBF7F1] px-2 py-0.5 text-[0.58rem] font-bold uppercase tracking-[0.1em] text-[#3F8A67]">
+                      Active
+                    </span>
+                  )}
+                </p>
+                <p className="mt-0.5 text-xs text-[#8587A3]">
+                  Started {formatDate(session.createdAt)} · expires {formatDate(session.expiresAt)}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={() => void revokeOthers()}
+          disabled={busy || (sessions?.filter((s) => !s.current).length ?? 0) === 0}
+          className={`${QUIET_BUTTON} ${busy ? 'opacity-60' : ''}`}
+          data-testid="button-settings-revoke-sessions"
+        >
+          {busy ? 'Signing out…' : 'Sign out other sessions'}
+        </button>
+        {revoked != null && revoked > 0 && (
+          <span className="text-xs font-bold text-[#3F8A67]" role="status">
+            {revoked} {revoked === 1 ? 'session' : 'sessions'} signed out
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Settings() {
   const { settings, updateSettings } = useWorkspaceState();
-  const { user, signOut } = useAuthState();
+  const { user, signOut, refreshUser } = useAuthState();
   const { subscription, status: subscriptionStatus, refresh } = useSubscriptionState();
   const [, navigate] = useLocation();
   const activeSection = useActiveSection(SECTION_IDS);
   const [portalBusy, setPortalBusy] = useState(false);
   const [portalError, setPortalError] = useState<string | null>(null);
+  const [exportData, setExportData] = useState<AccountExport | null>(null);
+  const [exportBusy, setExportBusy] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState('');
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Identity follows the signed-in user when one exists, then the workspace's
   // own settings — the same precedence Profile reads.
   const displayName = user?.name ?? settings.displayName;
   const email = user?.email ?? settings.email;
+
+  const runExport = async () => {
+    setExportError(null);
+    setExportBusy(true);
+    try {
+      const data = await exportAccountData();
+      setExportData(data);
+    } catch {
+      setExportError('Could not prepare your export. Try again in a moment.');
+    } finally {
+      setExportBusy(false);
+    }
+  };
+
+  const runDelete = async () => {
+    setDeleteError(null);
+    setDeleteBusy(true);
+    try {
+      await deleteAccount();
+      // Auth state will resolve to signed-out; send the user somewhere honest.
+      navigate('/');
+    } catch (err) {
+      setDeleteError(apiErrorMessage(err, 'Could not delete your account. Try again in a moment.'));
+      setDeleteBusy(false);
+    }
+  };
 
   const handleSignOut = async () => {
     // Destroys the server session and clears the cookie, then the guard
@@ -276,7 +635,7 @@ export default function Settings() {
         <PageHeader
           eyebrow="Settings / your preferences"
           title="How you want Fluxrico to work."
-          description="Appearance, notifications, and preferences — set once, kept on this device."
+          description="Appearance, notifications, and preferences — set once, saved to your account."
         />
 
         <div className="fluxrico-rise mt-8 lg:grid lg:grid-cols-[13.5rem_minmax(0,1fr)] lg:gap-10">
@@ -370,31 +729,18 @@ export default function Settings() {
                   </Link>
                 </div>
 
-                <div className="mt-5 grid gap-5 sm:grid-cols-2">
-                  <label className="block">
-                    <span className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#8587A3]">Display name</span>
-                    <input
-                      type="text"
-                      value={settings.displayName}
-                      onChange={(event) => updateSettings({ displayName: event.target.value })}
-                      className="fluxrico-focus mt-2 w-full rounded-xl border border-[#DADBEA] bg-[#FAFAFE] px-4 py-3 text-sm font-semibold text-[#25265A] outline-none transition-colors placeholder:text-[#A0A2B7] focus:border-[#AAA5E5] focus:bg-white"
-                      data-testid="input-settings-name"
+                {user && (
+                  <div className="mt-5">
+                    <NameField
+                      name={user.name}
+                      email={user.email}
+                      onSaved={(name) => {
+                        void refreshUser();
+                        updateSettings({ displayName: name });
+                      }}
                     />
-                  </label>
-                  <label className="block">
-                    <span className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#8587A3]">Email</span>
-                    <input
-                      type="email"
-                      value={settings.email}
-                      onChange={(event) => updateSettings({ email: event.target.value })}
-                      className="fluxrico-focus mt-2 w-full rounded-xl border border-[#DADBEA] bg-[#FAFAFE] px-4 py-3 text-sm font-semibold text-[#25265A] outline-none transition-colors placeholder:text-[#A0A2B7] focus:border-[#AAA5E5] focus:bg-white"
-                      data-testid="input-settings-email"
-                    />
-                  </label>
-                </div>
-                <p className="mt-4 text-xs leading-5 text-[#888AA4]">
-                  Details are stored locally in this preview and are not sent anywhere.
-                </p>
+                  </div>
+                )}
 
                 {/* Pro / trial status — mirrors the server-derived subscription state. */}
                 {subscriptionStatus === 'ready' && subscription && (
@@ -414,7 +760,7 @@ export default function Settings() {
                         {subscription.state === 'trialing' &&
                           `Free trial — ${subscription.trialDaysRemaining} ${subscription.trialDaysRemaining === 1 ? 'day' : 'days'} remaining of ${subscription.trialLengthDays}.`}
                         {subscription.state === 'expired' &&
-                          'Trial ended — your journey data is intact. Pro unlocks the advanced capabilities.'}
+                          'Trial ended — your journey data is intact. Pro keeps your full workspace going.'}
                       </p>
                     </div>
                     {subscription.state !== 'pro' ? (
@@ -483,92 +829,90 @@ export default function Settings() {
                 </div>
               </SettingsSection>
 
-              {/* 5. Privacy & data — honest about what exists today. */}
+              {/* 5. Privacy & data — accurate about the real architecture. */}
               <SettingsSection
                 id="privacy"
                 icon={Database}
                 title="Privacy & data"
-                description="What happens with your information in this phase, stated plainly."
+                description="What Fluxrico stores and why, stated plainly."
               >
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-[#ECECF3] bg-[#FAFAFE] p-5">
-                    <p className="text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[#5147C2]">Kept in this browser</p>
-                    <ul className="mt-3 space-y-2.5">
-                      {[
-                        'Your name, email, and preferences stay on this device.',
-                        'Journey, roadmap, and library content live in this session.',
-                        'Nothing is sent to a server — there is no server connection yet.',
-                      ].map((item) => (
-                        <li key={item} className="flex items-start gap-2.5 text-sm leading-6 text-[#565980]">
-                          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#8B84E8]" aria-hidden="true" />
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
+                <div className="rounded-2xl border border-[#ECECF3] bg-[#FAFAFE] p-5">
+                  <p className="text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[#5147C2]">What we store</p>
+                  <ul className="mt-3 space-y-2.5">
+                    {[
+                      'Your account — name, email, and a salted hash of your password — lives on Fluxrico servers.',
+                      'Your journey, navigator answers, roadmap progress, library, and preferences sync to your account so they survive sign-outs and follow you across devices.',
+                      'Your current password is never readable — not by us, not by anyone.',
+                      'Payments are handled by Paddle; card details never touch Fluxrico servers.',
+                    ].map((item) => (
+                      <li key={item} className="flex items-start gap-2.5 text-sm leading-6 text-[#565980]">
+                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#8B84E8]" aria-hidden="true" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="mt-5 flex flex-col justify-between gap-4 rounded-2xl border border-[#ECECF3] bg-[#FAFAFE] p-5 sm:flex-row sm:items-center">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-[#343568]">Export your data</p>
+                    <p className="mt-1 text-xs leading-5 text-[#8587A3]">
+                      Download everything tied to your account — profile, journey, library, subscription state — as a JSON file.
+                    </p>
                   </div>
-                  <div className="rounded-2xl border border-dashed border-[#D5D6E8] bg-white p-5">
-                    <p className="text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[#8587A3]">Arrives with accounts</p>
-                    <ul className="mt-3 space-y-2.5">
-                      {[
-                        'Export of your journey, roadmap, and library.',
-                        'Account deletion with a real backend.',
-                        'Sync across devices.',
-                      ].map((item) => (
-                        <li key={item} className="flex items-start gap-2.5 text-sm leading-6 text-[#8587A3]">
-                          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#C4C6DC]" aria-hidden="true" />
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
+                  <div className="flex shrink-0 flex-col items-start gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => void runExport()}
+                      disabled={exportBusy}
+                      className={`${QUIET_BUTTON} ${exportBusy ? 'opacity-60' : ''}`}
+                      data-testid="button-settings-export"
+                    >
+                      <Download size={14} strokeWidth={1.8} /> {exportBusy ? 'Preparing…' : 'Download export'}
+                    </button>
+                    {exportError && (
+                      <span className="text-xs leading-5 text-[#A05B2E]" role="alert">
+                        {exportError}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <p className="mt-4 text-xs leading-5 text-[#888AA4]">
-                  Because Fluxrico is frontend-only right now, data controls stop at honest limits rather than
-                  pretending to do more.
+                  The full details — what we collect, why, and your rights — are in the{' '}
+                  <Link href="/privacy" className="font-bold text-[#5147C2] underline decoration-[#C9C5F0] underline-offset-2 hover:decoration-[#5147C2]">
+                    Privacy Policy
+                  </Link>
+                  .
                 </p>
               </SettingsSection>
 
-              {/* 6. Security — restrained and future-ready, nothing faked. */}
+              {/* 6. Security — describes the real protections and gives real controls. */}
               <SettingsSection
                 id="security"
                 icon={ShieldCheck}
                 title="Security"
-                description="There is nothing to protect yet — and that is worth saying clearly."
+                description="How your account is protected, and what you can do from here."
               >
-                <div className="rounded-2xl border border-[#ECECF3] bg-[#FAFAFE] p-5">
-                  <p className="max-w-[38rem] text-sm leading-6 text-[#565980]">
-                    This preview runs entirely in your browser. There are no server sessions, no stored passwords, and
-                    no connected services — so there is no security surface to manage today.
-                  </p>
-                  <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[#ECECF1] pt-4">
-                    <span className="text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[#8587A3]">Future-ready</span>
-                    {['Password sign-in', 'Two-factor authentication', 'Session management'].map((item) => (
-                      <span
-                        key={item}
-                        className="inline-flex items-center rounded-full bg-[#F1F2FD] px-2.5 py-1 text-[0.6rem] font-bold uppercase tracking-[0.1em] text-[#8B8DDA]"
-                      >
-                        {item}
-                      </span>
-                    ))}
-                  </div>
+                <PasswordChangeCard />
+                <div className="mt-5">
+                  <SessionsCard />
                 </div>
                 <p className="mt-4 text-xs leading-5 text-[#888AA4]">
-                  These arrive with real accounts — until then, no action is needed here.
+                  Sessions expire on their own after 7 days, and signing out anywhere revokes that session on the server.
                 </p>
               </SettingsSection>
 
-              {/* 7. Account actions — separated from preferences, restrained. */}
+              {/* 7. Account actions — sign out and, with real friction, delete. */}
               <SettingsSection
                 id="account-actions"
                 icon={LogOut}
                 title="Account actions"
-                description="Ends your session and returns you to sign in. Nothing else is affected."
+                description="End your session — or, permanently, your account."
               >
                 <div className="flex flex-col justify-between gap-4 rounded-2xl border border-[#ECECF3] bg-[#FAFAFE] p-5 sm:flex-row sm:items-center">
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-[#343568]">Sign out of Fluxrico</p>
                     <p className="mt-1 text-xs leading-5 text-[#8587A3]">
-                      Signed in as {displayName} · {email}. Account deletion and data tools arrive with real accounts.
+                      Signed in as {displayName} · {email}. Your journey is saved on the server and will be here when you return.
                     </p>
                   </div>
                   <button
@@ -580,11 +924,48 @@ export default function Settings() {
                     <LogOut size={14} strokeWidth={1.8} /> Sign out
                   </button>
                 </div>
+
+                <div className="mt-5 rounded-2xl border border-dashed border-[#E0C9C9] bg-white p-5">
+                  <div className="flex items-center gap-2.5">
+                    <Trash2 size={15} strokeWidth={1.8} className="text-[#A05B5B]" aria-hidden="true" />
+                    <p className="text-sm font-bold text-[#5C4A4A]">Delete account</p>
+                  </div>
+                  <p className="mt-1 max-w-[38rem] text-xs leading-5 text-[#8B7A7A]">
+                    Permanently removes your account, journey, library, sessions, and any active Pro subscription link. This
+                    cannot be undone. Type DELETE to confirm.
+                  </p>
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <input
+                      type="text"
+                      value={confirmDelete}
+                      onChange={(event) => setConfirmDelete(event.target.value)}
+                      placeholder="Type DELETE"
+                      className="fluxrico-focus w-44 rounded-xl border border-[#E0C9C9] bg-[#FAFAFE] px-4 py-2.5 text-sm font-semibold text-[#25265A] outline-none transition-colors placeholder:text-[#B3A5A5] focus:border-[#C98B8B] focus:bg-white"
+                      data-testid="input-settings-delete-confirm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void runDelete()}
+                      disabled={confirmDelete !== 'DELETE' || deleteBusy}
+                      className={`fluxrico-focus inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-[#D9A5A5] bg-white px-4 text-[0.64rem] font-bold uppercase tracking-[0.13em] text-[#A05B5B] transition-colors hover:border-[#C98B8B] hover:bg-[#FBF3F3] ${
+                        confirmDelete !== 'DELETE' || deleteBusy ? 'opacity-50' : ''
+                      }`}
+                      data-testid="button-settings-delete-account"
+                    >
+                      {deleteBusy ? 'Deleting…' : 'Delete my account'}
+                    </button>
+                    {deleteError && (
+                      <span className="text-xs leading-5 text-[#A05B2E]" role="alert">
+                        {deleteError}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </SettingsSection>
             </div>
 
             <p className="mt-8 border-t border-[#DDDEEC] pt-5 text-xs leading-5 text-[#888AA4]">
-              Preferences apply instantly and stay on this device. Fluxrico keeps settings few on purpose.
+              Preferences apply instantly and are saved to your account. Fluxrico keeps settings few on purpose.
             </p>
           </div>
         </div>

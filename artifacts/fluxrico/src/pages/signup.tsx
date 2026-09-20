@@ -143,8 +143,23 @@ export default function SignUp() {
             className="fluxrico-focus mt-0.5 h-4 w-4 shrink-0 accent-[hsl(var(--landing-purple))]"
           />
           <span className="text-xs leading-5 text-[hsl(var(--landing-body))]">
-            I agree to Fluxrico's <span className="font-semibold text-[hsl(var(--landing-purple))]">terms</span> and{' '}
-            <span className="font-semibold text-[hsl(var(--landing-purple))]">privacy practices</span>.
+            I agree to Fluxrico's{' '}
+            <Link
+              href="/terms"
+              className="font-semibold text-[hsl(var(--landing-purple))] underline-offset-2 hover:underline"
+              data-testid="signup-link-terms"
+            >
+              terms
+            </Link>{' '}
+            and{' '}
+            <Link
+              href="/privacy"
+              className="font-semibold text-[hsl(var(--landing-purple))] underline-offset-2 hover:underline"
+              data-testid="signup-link-privacy"
+            >
+              privacy practices
+            </Link>
+            .
           </span>
         </label>
 

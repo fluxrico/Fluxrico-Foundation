@@ -11,8 +11,14 @@ type NavigatorStateValue = {
 
 const NavigatorStateContext = createContext<NavigatorStateValue | null>(null);
 
-export function NavigatorStateProvider({ children }: { children: ReactNode }) {
-  const [answers, setAnswers] = useState<NavigatorAnswers>({});
+function NavigatorStateProviderInner({
+  children,
+  hydration,
+}: {
+  children: ReactNode;
+  hydration: NavigatorAnswers | null;
+}) {
+  const [answers, setAnswers] = useState<NavigatorAnswers>(() => hydration ?? {});
   const value = useMemo(
     () => ({
       answers,
@@ -25,6 +31,28 @@ export function NavigatorStateProvider({ children }: { children: ReactNode }) {
   );
 
   return <NavigatorStateContext.Provider value={value}>{children}</NavigatorStateContext.Provider>;
+}
+
+/**
+ * Public provider. `hydration` seeds the saved Navigator answers for the
+ * signed-in user (null before the journey payload arrives or when none were
+ * saved). The inner provider remounts on hydration transition so answers
+ * seed exactly once — the answers stay in this one state system and are
+ * persisted as part of the workspace journey snapshot.
+ */
+export function NavigatorStateProvider({
+  children,
+  hydration = null,
+}: {
+  children: ReactNode;
+  hydration?: NavigatorAnswers | null;
+}) {
+  const key = hydration === null ? 'pending' : 'ready';
+  return (
+    <NavigatorStateProviderInner key={key} hydration={hydration}>
+      {children}
+    </NavigatorStateProviderInner>
+  );
 }
 
 export function useNavigatorState() {

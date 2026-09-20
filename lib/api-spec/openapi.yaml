@@ -14,6 +14,10 @@ tags:
     description: Authentication and account operations
   - name: subscription
     description: Subscription access state (trial / Pro / expired)
+  - name: journey
+    description: Server-side journey/workspace persistence
+  - name: account
+    description: Account self-service (profile, password, sessions, export, deletion)
 paths:
   /healthz:
     get:
@@ -377,6 +381,224 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+
+  /journey:
+    get:
+      operationId: getJourney
+      tags: [journey]
+      summary: Load the signed-in user's journey state
+      description: |-
+        Returns the persisted journey/workspace payload for the authenticated
+        user, or `{ journey: null }` when nothing has been saved yet. Every
+        workspace surface reads this instead of keeping its own store.
+      responses:
+        "200":
+          description: The persisted journey payload, or null when never saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JourneyResponse"
+        "401":
+          description: No valid session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: saveJourney
+      tags: [journey]
+      summary: Save the signed-in user's journey state
+      description: |-
+        Validates and stores the journey/workspace payload server-side. The
+        payload shape is enforced by the server schema; unknown fields are
+        rejected so the stored state can always be trusted. Server stamps
+        updatedAt; client values for it are ignored.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JourneySaveRequest"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JourneySaveResult"
+        "400":
+          description: Invalid payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: No valid session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "413":
+          description: Payload too large
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /account/me:
+    patch:
+      operationId: updateAccount
+      tags: [account]
+      summary: Update the signed-in user's name
+      description: |-
+        Updates the account's display name server-side. Email changes are not
+        offered in this phase (they require a verified-change flow); the
+        response includes the updated user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAccountRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUserResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: No valid session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /account/password:
+    post:
+      operationId: changePassword
+      tags: [account]
+      summary: Change the password of the signed-in user
+      description: |-
+        Requires the current password, sets a new one, and revokes every
+        other session (the current device stays signed in).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "200":
+          description: Password changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          description: Invalid input, or wrong current password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: No valid session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /account/sessions:
+    get:
+      operationId: listSessions
+      tags: [account]
+      summary: List the account's active sessions
+      description: |-
+        Returns the account's non-expired sessions, newest first, including
+        whether each row is the current one. Only metadata — never session ids.
+      responses:
+        "200":
+          description: Active sessions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionListResponse"
+        "401":
+          description: No valid session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /account/sessions/others:
+    delete:
+      operationId: revokeOtherSessions
+      tags: [account]
+      summary: Sign out every other session
+      description: Revokes all of the account's sessions except the current one.
+      responses:
+        "200":
+          description: Other sessions revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionRevokeResult"
+        "401":
+          description: No valid session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /account/export:
+    get:
+      operationId: exportAccountData
+      tags: [account]
+      summary: Export the account's data as JSON
+      description: |-
+        Returns a single JSON document with the account profile, subscription
+        state, journey data, and webhook event count. Intended for the
+        Settings data-export control.
+      responses:
+        "200":
+          description: The export document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountExport"
+        "401":
+          description: No valid session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /account:
+    delete:
+      operationId: deleteAccount
+      tags: [account]
+      summary: Delete the account and all of its data
+      description: |-
+        Permanently deletes the user row; every dependent row (sessions,
+        tokens, subscription, journey) is removed by ON DELETE CASCADE.
+        Destroys the current session and clears the cookie. Billing must be
+        cancelled by the user in the Paddle portal first; Paddle retains its
+        own customer/transaction records as the payment processor.
+      responses:
+        "204":
+          description: Account deleted and signed out
+        "401":
+          description: No valid session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -660,3 +882,270 @@ components:
       required:
         - status
         - url
+
+    UpdateAccountRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+      required:
+        - name
+
+    ChangePasswordRequest:
+      type: object
+      properties:
+        currentPassword:
+          type: string
+          minLength: 1
+          maxLength: 200
+        newPassword:
+          type: string
+          minLength: 8
+          maxLength: 200
+      required:
+        - currentPassword
+        - newPassword
+
+    SessionInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Opaque row identifier for display keys only — never the credential.
+        current:
+          type: boolean
+          description: True when this row is the session making the request.
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - current
+        - createdAt
+        - expiresAt
+
+    SessionListResponse:
+      type: object
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/SessionInfo"
+      required:
+        - sessions
+
+    SessionRevokeResult:
+      type: object
+      properties:
+        status:
+          type: string
+        revoked:
+          type: integer
+      required:
+        - status
+        - revoked
+
+    JourneyResponse:
+      type: object
+      properties:
+        journey:
+          nullable: true
+          description: The stored payload, or null when nothing has been saved yet.
+      required:
+        - journey
+
+    JourneySaveRequest:
+      type: object
+      description: |-
+        The validated journey/workspace envelope. The server owns the shape so
+        the stored state can always be trusted; the client persists the whole
+        workspace snapshot it derives from its single shared state system.
+      properties:
+        navigatorAnswers:
+          type: object
+          description: Navigator answers keyed by step; omitted when not taken.
+          properties:
+            goal:
+              type: string
+              maxLength: 120
+            current:
+              type: string
+              maxLength: 120
+            strength:
+              type: string
+              maxLength: 120
+            path:
+              type: string
+              maxLength: 120
+          additionalProperties: false
+        completedStages:
+          type: array
+          description: Stages completed through real work, in canonical stage order.
+          items:
+            type: string
+            enum: [Start, Shape, Move, Build, Launch, Grow]
+          maxItems: 6
+          uniqueItems: true
+        libraryEntries:
+          type: array
+          description: Library pieces (sample seeds and user-added pieces).
+          maxItems: 500
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                maxLength: 80
+              kind:
+                type: string
+                enum: [Idea, Note, Resource, Output]
+              title:
+                type: string
+                maxLength: 300
+              excerpt:
+                type: string
+                maxLength: 4000
+              date:
+                type: string
+                maxLength: 60
+              stage:
+                type: string
+                enum: [Start, Shape, Move, Build, Launch, Grow]
+                nullable: true
+              saved:
+                type: boolean
+                nullable: true
+              sample:
+                type: boolean
+                nullable: true
+            required: [id, kind, title, excerpt, date]
+            additionalProperties: false
+        events:
+          type: array
+          description: Real session journey events already recorded for this account.
+          maxItems: 200
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                enum:
+                  - navigator-completed
+                  - journey-started
+                  - next-move-started
+                  - stage-completed
+                  - library-piece-added
+                  - library-piece-saved
+              stamp:
+                type: string
+                maxLength: 60
+              stage:
+                type: string
+                enum: [Start, Shape, Move, Build, Launch, Grow]
+                nullable: true
+            required: [key, stamp]
+            additionalProperties: false
+        notificationReadIds:
+          type: array
+          description: Notification ids already read (samples plus real events).
+          maxItems: 200
+          items:
+            type: string
+            maxLength: 120
+        clearedNotifications:
+          type: boolean
+          description: True when the user cleared the whole notification feed.
+        settings:
+          type: object
+          description: Workspace settings (notification + presentation toggles and identity).
+          properties:
+            displayName:
+              type: string
+              maxLength: 120
+            email:
+              type: string
+              maxLength: 254
+            emailDigest:
+              type: boolean
+            productUpdates:
+              type: boolean
+            journeyReminders:
+              type: boolean
+            compactMode:
+              type: boolean
+            reducedMotion:
+              type: boolean
+          additionalProperties: false
+        hasStartedNextMove:
+          type: boolean
+      required:
+        - completedStages
+        - libraryEntries
+        - events
+        - notificationReadIds
+        - clearedNotifications
+        - settings
+        - hasStartedNextMove
+
+    JourneySaveResult:
+      type: object
+      properties:
+        status:
+          type: string
+        savedAt:
+          type: string
+          format: date-time
+          description: Server-stamped time of the accepted write.
+      required:
+        - status
+        - savedAt
+
+    AccountExport:
+      type: object
+      properties:
+        account:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            email:
+              type: string
+            emailVerified:
+              type: boolean
+            createdAt:
+              type: string
+              format: date-time
+          required: [id, name, email, emailVerified, createdAt]
+        subscription:
+          nullable: true
+          description: The server-derived subscription state at export time.
+        journey:
+          nullable: true
+          description: The stored journey payload, or null when never saved.
+        billing:
+          type: object
+          description: Linked billing identifiers, null when no purchase exists.
+          properties:
+            customerId:
+              type: string
+              nullable: true
+            subscriptionId:
+              type: string
+              nullable: true
+          required: [customerId, subscriptionId]
+        exportedAt:
+          type: string
+          format: date-time
+      required:
+        - account
+        - subscription
+        - journey
+        - billing
+        - exportedAt
