@@ -28,16 +28,17 @@ const PLANS = {
 
 /** Capabilities shipped with Pro at launch, and what is still coming. */
 const PRO_CAPABILITIES = [
-  'Continuous next moves',
-  'Deeper guidance',
-  'Personalized roadmap',
-  'Advanced progress',
-  'Unlimited library',
-  'Journey history',
-  'Insights',
+  'Keep your full workspace after the trial ends',
+  'Your journey, roadmap, library, and history stay in sync across devices',
+  'Support the product while it grows — you shape what ships next',
 ] as const;
 
-const COMING_CAPABILITIES = ['Future Pro tools'] as const;
+const COMING_CAPABILITIES = [
+  'Deeper guidance',
+  'Adaptive roadmap',
+  'Advanced progress insights',
+  'Unlimited library',
+] as const;
 
 const CONFIG_REASON_COPY: Record<string, string> = {
   client_token_missing: 'Billing setup is in progress — the Paddle client token is not configured yet.',
@@ -152,18 +153,18 @@ export default function Pro() {
       } of trial left`,
       title: 'Turn your direction into progress.',
       description:
-        'Free helps you find your direction. Pro helps you turn that direction into progress — continuous next moves, deeper guidance, and a roadmap that adapts as you do.',
+        'Free helps you find your direction. Pro keeps your full workspace moving after the trial ends — and directly supports what we build next.',
     },
     expired: {
       eyebrow: 'Your Fluxrico trial has ended',
-      title: 'Your journey stays. Pro takes it further.',
+      title: 'Your journey stays. Pro keeps it moving.',
       description:
-        'Everything you built — direction, roadmap, library, history — is exactly where you left it. Pro unlocks the advanced tools that keep it moving forward.',
+        'Everything you built — direction, roadmap, library, history — is exactly where you left it. Pro keeps your full workspace going and supports what ships next.',
     },
     pro: {
       eyebrow: 'Fluxrico Pro · Active',
       title: 'Pro is active on your account.',
-      description: 'Every Pro capability below is included in your plan. Thank you for building with us.',
+      description: 'Everything Pro includes today is listed below. Thank you for building with us.',
     },
     // signed-out / error / not-yet-loaded: neutral, honest framing
     neutral: {
@@ -281,7 +282,7 @@ export default function Pro() {
             {subscription.state === 'trialing' &&
               `${subscription.trialDaysRemaining} ${subscription.trialDaysRemaining === 1 ? 'day' : 'days'} remaining in your 3-day trial.`}
             {subscription.state === 'expired' &&
-              'Your journey data is safe. Pro is required for the advanced capabilities below.'}
+              'Your journey data is safe. Pro keeps your full workspace going after the trial.'}
             {subscription.state === 'pro' &&
               subscription.plan &&
               `Plan: ${subscription.plan.interval === 'yearly' ? 'Annual' : 'Monthly'}${subscription.plan.cancelAtPeriodEnd ? ' · renews off at period end' : ''}.`}
@@ -360,7 +361,7 @@ export default function Pro() {
           </div>
 
           <div className="mt-6 border-t border-[#ECECF1] pt-5">
-            <p className="text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[#8587A3]">Coming later</p>
+            <p className="text-[0.6rem] font-bold uppercase tracking-[0.15em] text-[#8587A3]">Coming later — not part of Pro today</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {COMING_CAPABILITIES.map((item) => (
                 <span

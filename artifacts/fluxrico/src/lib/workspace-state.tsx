@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -11,8 +12,11 @@ import {
   LIBRARY_ENTRIES,
   type JourneyActivity,
   type LibraryEntry,
+  type NavigatorAnswers,
   type RoadmapStageName,
 } from '@/lib/journey';
+import { saveJourney } from '@workspace/api-client-react';
+import type { JourneySaveRequest } from '@workspace/api-client-react';
 
 // ── Notifications ────────────────────────────────────────────────────────────
 // Notifications exist only for meaningful journey events. Each item answers
@@ -40,8 +44,8 @@ export type NotificationItem = {
 
 // Starter notifications: they show the shape of the feed for a first visit and
 // are marked `sample: true` so the UI can label them as examples. Real events
-// recorded in this session are never marked sample.
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [
+// are derived from the event log and are never marked sample.
+const SAMPLE_NOTIFICATIONS: NotificationItem[] = [
   {
     id: 'n1',
     category: 'Journey',
@@ -111,13 +115,14 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   },
 ];
 
-// ── Real session journey events ──────────────────────────────────────────────
-// The workspace is session-local, so activity is recorded here as the user
-// actually acts. One event per meaningful action, keyed so the same action can
-// never append twice (React re-renders, StrictMode double-invocations, and
-// repeated clicks all land on the same key and are ignored after the first).
+// ── Real journey events ──────────────────────────────────────────────────────
+// The workspace records one event per meaningful action, keyed so the same
+// action can never append twice (React re-renders, StrictMode double-
+// invocations, and repeated clicks all land on the same key and are ignored
+// after the first). The event log is part of the persisted journey payload,
+// so the record of what happened survives refreshes and sign-outs.
 
-/** The existing workspace actions that are meaningful enough to record. */
+/** The workspace actions that are meaningful enough to record. */
 export type JourneyActivityEventKey =
   | 'navigator-completed'
   | 'journey-started'
@@ -137,8 +142,8 @@ const STAGE_COMPLETION_BY_EVENT: Partial<Record<JourneyActivityEventKey, Roadmap
   'navigator-completed': 'Start',
 };
 
-/** A real event recorded this session, with the moment it happened. */
-type SessionJourneyEvent = {
+/** A real journey event, with the moment it happened. */
+export type SessionJourneyEvent = {
   key: JourneyActivityEventKey;
   stamp: string;
   /** The stage a 'stage-completed' event finished; absent on other events. */
@@ -227,7 +232,7 @@ const SESSION_JOURNEY_EVENTS: Record<JourneyActivityEventKey, JourneyActivityEve
     notification: {
       category: 'Library',
       title: 'New piece in your library',
-      detail: 'Your piece was saved to the Library for this session — keep the pieces that matter most starred.',
+      detail: 'Your piece was saved to the Library — keep the pieces that matter most starred.',
       href: '/library',
       actionLabel: 'Open library',
     },
@@ -241,12 +246,17 @@ const SESSION_JOURNEY_EVENTS: Record<JourneyActivityEventKey, JourneyActivityEve
   },
 };
 
-/** "Today, 14:32"-style human timestamp for events recorded this session. */
+/** "Today, 14:32"-style human timestamp for events. */
 function nowStamp(): string {
   const now = new Date();
   const hours = String(now.getHours()).padStart(2, '0');
   const minutes = String(now.getMinutes()).padStart(2, '0');
   return `Today, ${hours}:${minutes}`;
+}
+
+/** Notification id for a stage-completion event (per stage, not global). */
+function notificationIdForEvent(event: SessionJourneyEvent): string {
+  return event.key === 'stage-completed' && event.stage ? `event-stage-${event.stage}` : `event-${event.key}`;
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────────
@@ -271,9 +281,9 @@ const INITIAL_SETTINGS: WorkspaceSettings = {
   reducedMotion: false,
 };
 
-// The two presentation toggles persist locally, so the workspace keeps its
-// density and motion choices across reloads. They stay part of the existing
-// WorkspaceSettings store — no second settings system.
+// The two presentation toggles also persist locally, so the workspace keeps
+// its density and motion choices instantly across reloads. They remain part
+// of the existing WorkspaceSettings store — no second settings system.
 const PRESENTATION_STORAGE_KEY = 'fluxrico.settings.presentation';
 
 function readStoredPresentation(): Partial<WorkspaceSettings> {
@@ -308,6 +318,19 @@ function persistPresentation(settings: WorkspaceSettings) {
 
 const INITIAL_PRESENTATION = readStoredPresentation();
 
+// ── Hydration payload ────────────────────────────────────────────────────────
+
+export type WorkspaceHydration = {
+  navigatorAnswers?: Record<string, string> | null;
+  completedStages?: string[] | null;
+  libraryEntries?: LibraryEntry[] | null;
+  events?: SessionJourneyEvent[] | null;
+  notificationReadIds?: string[] | null;
+  clearedNotifications?: boolean | null;
+  settings?: Partial<WorkspaceSettings> | null;
+  hasStartedNextMove?: boolean | null;
+};
+
 // ── Context ──────────────────────────────────────────────────────────────────
 
 type WorkspaceStateValue = {
@@ -318,29 +341,24 @@ type WorkspaceStateValue = {
   clearNotifications: () => void;
   settings: WorkspaceSettings;
   updateSettings: (patch: Partial<WorkspaceSettings>) => void;
-  /** Real activity recorded this session, newest first — never sample. */
+  /** Real journey activity, newest first — never sample. */
   realActivity: JourneyActivity[];
-  /** True once the user has generated at least one real event this session. */
+  /** True once the user has generated at least one real event. */
   hasRealActivity: boolean;
   /**
-   * Stages completed through real work this session — the single source of
-   * truth for progress. Empty until a real stage-completion event exists.
+   * Stages completed through real work — the single source of truth for
+   * progress. Hydrated from the server and extended by real events.
    */
   completedStages: RoadmapStageName[];
   /**
-   * Library pieces for this session: the starter sample entries plus every
-   * piece the user adds. The single source of truth for the Library page, so
-   * adds, saved stars, and removals survive navigation within the session.
+   * Library pieces: the starter sample entries plus every piece the user
+   * adds. The single source of truth for the Library page.
    */
   libraryEntries: LibraryEntry[];
   addLibraryEntry: (entry: LibraryEntry) => void;
   toggleLibraryEntrySaved: (id: string) => void;
   removeLibraryEntry: (id: string) => void;
-  /**
-   * True once the user's current next move has been started this session
-   * ('next-move-started'). Start/Continue labels on the Next Move cards read
-   * this — nothing completion-related depends on it.
-   */
+  /** True once the current next move has been started. */
   hasStartedNextMove: boolean;
   /** Convenience wrappers so call sites stay declarative. */
   recordNavigatorCompleted: () => void;
@@ -348,41 +366,133 @@ type WorkspaceStateValue = {
   recordNextMoveStarted: () => void;
   /** Marks a roadmap stage genuinely completed through the user's action. */
   recordStageCompleted: (stage: RoadmapStageName) => void;
+  /** True while the workspace snapshot is being saved to the server. */
+  isSaving: boolean;
+  /** Set when the latest save failed (never blocks the UI; retried on next change). */
+  saveFailed: boolean;
 };
 
 const WorkspaceStateContext = createContext<WorkspaceStateValue | null>(null);
 
-export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
-  const [settings, setSettings] = useState<WorkspaceSettings>({
+function WorkspaceStateProviderInner({
+  children,
+  hydration,
+  navigatorAnswers: liveAnswers,
+}: {
+  children: ReactNode;
+  hydration: WorkspaceHydration | null;
+  /** The live Navigator answers from the single shared navigator state. */
+  navigatorAnswers: NavigatorAnswers;
+}) {
+  // Whether hydration has been applied. When null, the workspace starts from
+  // its defaults; when set, the saved payload seeds every slice of state.
+  const [hydrated] = useState<boolean>(() => hydration !== null);
+
+  // Real journey events, seeded from the persisted log.
+  const [sessionEvents, setSessionEvents] = useState<SessionJourneyEvent[]>(() =>
+    Array.isArray(hydration?.events) ? (hydration!.events as SessionJourneyEvent[]) : [],
+  );
+  const sessionEventsRef = useRef<SessionJourneyEvent[]>(sessionEvents);
+  useEffect(() => {
+    sessionEventsRef.current = sessionEvents;
+  }, [sessionEvents]);
+
+  // Read-state for starter notifications, restored from the saved payload.
+  const hydratedReadIds = useMemo(() => new Set(hydration?.notificationReadIds ?? []), [hydration]);
+  const clearedNotifications = hydration?.clearedNotifications === true;
+
+  // Read-state changes (mark read / mark all read / clear) are tracked as
+  // plain state and merged over the sample set + derived event notifications.
+  const [extraReadIds, setExtraReadIds] = useState<Set<string>>(() => new Set());
+  const [allRead, setAllRead] = useState(false);
+  const [cleared, setCleared] = useState(clearedNotifications);
+  void hydrated;
+
+  const [settings, setSettings] = useState<WorkspaceSettings>(() => ({
     ...INITIAL_SETTINGS,
     ...INITIAL_PRESENTATION,
-  });
-  const [sessionEvents, setSessionEvents] = useState<SessionJourneyEvent[]>([]);
-  // Mirrors sessionEvents for the idempotency guard, so recording never
-  // depends on render timing and state updaters stay pure.
-  const sessionEventsRef = useRef<SessionJourneyEvent[]>([]);
+    ...(hydration?.settings ?? {}),
+  }));
 
-  // Library pieces live here, not in the Library page, so user-generated
-  // entries and saved stars survive navigation for the session. The starter
-  // sample entries seed the list and keep their `sample` label.
-  const [libraryEntries, setLibraryEntries] = useState<LibraryEntry[]>([...LIBRARY_ENTRIES]);
-  // Mirrors libraryEntries for the same ref-before-setState pattern the event
-  // recorder uses, so mutators never depend on render timing.
+  // Library pieces, seeded from the saved list (falling back to the starter
+  // samples before the first save).
+  const [libraryEntries, setLibraryEntries] = useState<LibraryEntry[]>(() => {
+    const saved = Array.isArray(hydration?.libraryEntries) ? hydration!.libraryEntries! : null;
+    if (!saved || saved.length === 0) return [...LIBRARY_ENTRIES];
+    return saved;
+  });
   const libraryEntriesRef = useRef<LibraryEntry[]>(libraryEntries);
+  useEffect(() => {
+    libraryEntriesRef.current = libraryEntries;
+  }, [libraryEntries]);
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
+
+  // Events already in the hydrated log were seen when they fired. Events
+  // recorded after mount are new: they stay unread until marked.
+  const hydratedEventCount = useRef(Array.isArray(hydration?.events) ? hydration!.events!.length : 0);
+
+  // ── Derived notifications ──────────────────────────────────────────────────
+  // One derivation, one order: real event notifications first (newest
+  // first), then the starter samples (with their restored read state),
+  // unless the user cleared the feed.
+
+  const realNotifications = useMemo<NotificationItem[]>(() => {
+    const out: NotificationItem[] = [];
+    const total = sessionEvents.length;
+    sessionEvents.forEach((event, index) => {
+      const def = SESSION_JOURNEY_EVENTS[event.key];
+      if (!def.notification) return;
+      const id = notificationIdForEvent(event);
+      out.push({
+        id,
+        timestamp: event.stamp,
+        // Hydrated events were seen; events recorded after mount are new.
+        read: index < hydratedEventCount.current || extraReadIds.has(id) || allRead,
+        ...def.notification,
+        ...(event.key === 'stage-completed' && event.stage
+          ? {
+              title: `${event.stage} completed`,
+              detail: `You met ${event.stage}'s definition of done — the stage now counts as complete. The next stage is waiting with its own next move.`,
+            }
+          : {}),
+      });
+    });
+    return out.reverse();
+  }, [sessionEvents, extraReadIds, allRead]);
+
+  const sampleNotifications = useMemo<NotificationItem[]>(
+    () =>
+      cleared
+        ? []
+        : SAMPLE_NOTIFICATIONS.map((item) => ({
+            ...item,
+            read: allRead || hydratedReadIds.has(item.id) || extraReadIds.has(item.id),
+          })),
+    [cleared, allRead, hydratedReadIds, extraReadIds],
+  );
+
+  const notifications = useMemo<NotificationItem[]>(
+    () => [...realNotifications, ...sampleNotifications],
+    [realNotifications, sampleNotifications],
+  );
+
+  const unreadCount = useMemo(
+    () => notifications.filter((item) => !item.read).length,
+    [notifications],
+  );
 
   const markNotificationRead = useCallback((id: string) => {
-    setNotifications((current) =>
-      current.map((item) => (item.id === id ? { ...item, read: true } : item)),
-    );
+    setExtraReadIds((current) => new Set(current).add(id));
   }, []);
 
   const markAllNotificationsRead = useCallback(() => {
-    setNotifications((current) => current.map((item) => ({ ...item, read: true })));
+    setAllRead(true);
   }, []);
 
   const clearNotifications = useCallback(() => {
-    setNotifications([]);
+    setCleared(true);
   }, []);
 
   const updateSettings = useCallback((patch: Partial<WorkspaceSettings>) => {
@@ -393,82 +503,39 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  // Appends a real (non-sample) notification and keeps the feed bounded. The
-  // newest notification leads, matching how the starter feed is ordered.
-  const appendNotification = useCallback(
-    (notification: NonNullable<JourneyActivityEvent['notification']>, eventId: string) => {
-      setNotifications((current) => {
-        const next = [
-          {
-            id: `event-${eventId}`,
-            timestamp: nowStamp(),
-            read: false,
-            ...notification,
-          },
-          ...current,
-        ];
-        // Bound the feed so one long session cannot turn into noise.
-        return next.length > 60 ? next.slice(0, 60) : next;
-      });
-    },
-    [],
-  );
-
   // The recorder: idempotent by event key. The same action can only exist
-  // once per session, no matter how often the handler fires. State updaters
-  // stay pure — the guard runs against the ref before any setState.
-  const recordJourneyEvent = useCallback(
-    (key: JourneyActivityEventKey) => {
-      if (sessionEventsRef.current.some((item) => item.key === key)) return;
-      const next = [...sessionEventsRef.current, { key, stamp: nowStamp() }];
-      sessionEventsRef.current = next;
-      setSessionEvents(next);
-      const event = SESSION_JOURNEY_EVENTS[key];
-      if (event.notification) appendNotification(event.notification, key);
-    },
-    [appendNotification],
-  );
+  // once, no matter how often the handler fires. State updaters stay pure —
+  // the guard runs against the ref before any setState.
+  const recordJourneyEvent = useCallback((key: JourneyActivityEventKey) => {
+    if (sessionEventsRef.current.some((item) => item.key === key)) return;
+    const next = [...sessionEventsRef.current, { key, stamp: nowStamp() }];
+    sessionEventsRef.current = next;
+    setSessionEvents(next);
+  }, []);
 
   /**
    * Marks a roadmap stage as genuinely completed — the user's explicit
    * confirmation that the stage's definition of done (from the shared stage
-   * guide) is met. A stage that was already completed by a real event (Start
-   * via Navigator) is never recorded twice; every other stage completes once
-   * through its own idempotent 'stage-completed' event.
+   * guide) is met. A stage already completed by a real event is never
+   * recorded twice.
    */
-  const recordStageCompleted = useCallback(
-    (stage: RoadmapStageName) => {
-      // A stage already counts as complete when a mapped event finished it
-      // (Start via Navigator) or when this same action was already recorded.
-      const alreadyCompleted = sessionEventsRef.current.some(
-        (item) => STAGE_COMPLETION_BY_EVENT[item.key] === stage || (item.key === 'stage-completed' && item.stage === stage),
-      );
-      if (alreadyCompleted) return;
-      const next: SessionJourneyEvent[] = [
-        ...sessionEventsRef.current,
-        { key: 'stage-completed', stamp: nowStamp(), stage },
-      ];
-      sessionEventsRef.current = next;
-      setSessionEvents(next);
-      const event = SESSION_JOURNEY_EVENTS['stage-completed'];
-      if (event.notification) {
-        appendNotification(
-          {
-            ...event.notification,
-            title: `${stage} completed`,
-            detail: `You met ${stage}'s definition of done — the stage now counts as complete. The next stage is waiting with its own next move.`,
-          },
-          `stage-${stage}`,
-        );
-      }
-    },
-    [appendNotification],
-  );
+  const recordStageCompleted = useCallback((stage: RoadmapStageName) => {
+    const alreadyCompleted = sessionEventsRef.current.some(
+      (item) =>
+        STAGE_COMPLETION_BY_EVENT[item.key] === stage || (item.key === 'stage-completed' && item.stage === stage),
+    );
+    if (alreadyCompleted) return;
+    const next: SessionJourneyEvent[] = [
+      ...sessionEventsRef.current,
+      { key: 'stage-completed', stamp: nowStamp(), stage },
+    ];
+    sessionEventsRef.current = next;
+    setSessionEvents(next);
+  }, []);
 
-  // The real, user-generated counterpart to JOURNEY.recentActivity: same
-  // JourneyActivity shape, newest first, so the Dashboard can merge the two
-  // lists without any transformation of its own. Stage-completion events name
-  // the stage they finished, so the feed reads naturally.
+  // The real, user-generated activity feed: same JourneyActivity shape,
+  // newest first, so the Dashboard can merge it with the starter rows without
+  // any transformation of its own.
   const realActivity = useMemo<JourneyActivity[]>(
     () =>
       [...sessionEvents]
@@ -488,11 +555,10 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
     [sessionEvents],
   );
 
-  // The single source of truth for stage completion: every real event this
-  // session is mapped through STAGE_COMPLETION_BY_EVENT, and a stage appears
-  // only when that real work actually happened. 'stage-completed' carries the
-  // stage it finished on the event itself. Derived state, no second store to
-  // keep in sync, and navigation can never complete a stage.
+  // The single source of truth for stage completion: every real event is
+  // mapped through STAGE_COMPLETION_BY_EVENT. Hydrated events from earlier
+  // sessions flow through the exact same mapping — there is no second
+  // completion system.
   const completedStages = useMemo<RoadmapStageName[]>(() => {
     const stages = new Set<RoadmapStageName>();
     for (const { key, stage } of sessionEvents) {
@@ -503,34 +569,16 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
     return [...stages];
   }, [sessionEvents]);
 
-  const recordNavigatorCompleted = useCallback(
-    () => recordJourneyEvent('navigator-completed'),
-    [recordJourneyEvent],
-  );
-  const recordJourneyStarted = useCallback(
-    () => recordJourneyEvent('journey-started'),
-    [recordJourneyEvent],
-  );
-  const recordNextMoveStarted = useCallback(
-    () => recordJourneyEvent('next-move-started'),
-    [recordJourneyEvent],
-  );
-  const recordStageCompletedCallback = useCallback(
-    (stage: RoadmapStageName) => recordStageCompleted(stage),
-    [recordStageCompleted],
-  );
+  const recordNavigatorCompleted = useCallback(() => recordJourneyEvent('navigator-completed'), [recordJourneyEvent]);
+  const recordJourneyStarted = useCallback(() => recordJourneyEvent('journey-started'), [recordJourneyEvent]);
+  const recordNextMoveStarted = useCallback(() => recordJourneyEvent('next-move-started'), [recordJourneyEvent]);
 
   // ── Library pieces ────────────────────────────────────────────────────────
-  // The Library page owns no entries state of its own: pieces live here so
-  // adds, saved stars, and removals survive navigation within the session.
-  // Real activity is recorded through the same idempotent event recorder as
-  // before, so no event can ever append twice.
   const addLibraryEntry = useCallback(
     (entry: LibraryEntry) => {
       const next = [entry, ...libraryEntriesRef.current];
       libraryEntriesRef.current = next;
       setLibraryEntries(next);
-      // Adding a piece is a real action — recorded exactly once per session.
       recordJourneyEvent('library-piece-added');
     },
     [recordJourneyEvent],
@@ -540,8 +588,6 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
     (id: string) => {
       const wasSaved = libraryEntriesRef.current.find((item) => item.id === id)?.saved === true;
       if (!wasSaved) {
-        // Marking a piece as important is a real action — same event, same
-        // once-per-session guarantee as before.
         recordJourneyEvent('library-piece-saved');
       }
       const next = libraryEntriesRef.current.map((item) =>
@@ -559,10 +605,110 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
     setLibraryEntries(next);
   }, []);
 
+  // ── Server persistence ────────────────────────────────────────────────────
+  // A debounced snapshot of the whole workspace state is saved to the server.
+  // The state here stays the single system: the API stores exactly the
+  // snapshot this provider derives, and hydration feeds it back in.
+
+  const hasStartedNextMove = sessionEvents.some((item) => item.key === 'next-move-started');
+
+  const buildSnapshot = useCallback((): JourneySaveRequest => {
+    const sampleReadIds = sampleNotifications.filter((item) => item.sample && item.read).map((item) => item.id);
+    return {
+      navigatorAnswers: liveAnswers && Object.keys(liveAnswers).length > 0 ? liveAnswers : undefined,
+      completedStages,
+      libraryEntries: libraryEntries.map((entry) => ({
+        id: entry.id,
+        kind: entry.kind,
+        title: entry.title,
+        excerpt: entry.excerpt,
+        date: entry.date,
+        stage: entry.stage ?? null,
+        saved: entry.saved ?? null,
+        sample: entry.sample ?? null,
+      })),
+      events: sessionEvents.map((event) => ({
+        key: event.key,
+        stamp: event.stamp,
+        stage: event.stage ?? null,
+      })),
+      notificationReadIds: sampleReadIds,
+      clearedNotifications: cleared,
+      settings: {
+        displayName: settings.displayName,
+        email: settings.email,
+        emailDigest: settings.emailDigest,
+        productUpdates: settings.productUpdates,
+        journeyReminders: settings.journeyReminders,
+        compactMode: settings.compactMode,
+        reducedMotion: settings.reducedMotion,
+      },
+      hasStartedNextMove,
+    };
+  }, [
+    sampleNotifications,
+    liveAnswers,
+    completedStages,
+    libraryEntries,
+    sessionEvents,
+    settings,
+    cleared,
+    hasStartedNextMove,
+  ]);
+
+  const skipSave = useRef(hydrated);
+  const saveTimer = useRef<number | null>(null);
+  const savingRef = useRef(false);
+  const pendingRef = useRef(false);
+
+  const doSave = useCallback(async () => {
+    if (savingRef.current) {
+      pendingRef.current = true;
+      return;
+    }
+    savingRef.current = true;
+    setIsSaving(true);
+    try {
+      await saveJourney(buildSnapshot());
+      setSaveFailed(false);
+    } catch {
+      // Honest failure: the workspace keeps working locally; the next change
+      // retries the save. No fake success is recorded anywhere.
+      setSaveFailed(true);
+    } finally {
+      savingRef.current = false;
+      setIsSaving(false);
+      if (pendingRef.current) {
+        pendingRef.current = false;
+        void doSave();
+      }
+    }
+  }, [buildSnapshot]);
+
+  useEffect(() => {
+    // Skip the mount-time effect: nothing changed yet — the first save fires
+    // when real state changes after mount.
+    if (skipSave.current) {
+      skipSave.current = false;
+      return;
+    }
+    if (saveTimer.current !== null) window.clearTimeout(saveTimer.current);
+    saveTimer.current = window.setTimeout(() => {
+      saveTimer.current = null;
+      void doSave();
+    }, 1200);
+    return () => {
+      if (saveTimer.current !== null) {
+        window.clearTimeout(saveTimer.current);
+        saveTimer.current = null;
+      }
+    };
+  }, [doSave]);
+
   const value = useMemo<WorkspaceStateValue>(
     () => ({
       notifications,
-      unreadCount: notifications.filter((item) => !item.read).length,
+      unreadCount,
       markNotificationRead,
       markAllNotificationsRead,
       clearNotifications,
@@ -570,7 +716,7 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
       updateSettings,
       realActivity,
       hasRealActivity: sessionEvents.length > 0,
-      hasStartedNextMove: sessionEvents.some((item) => item.key === 'next-move-started'),
+      hasStartedNextMove,
       completedStages,
       libraryEntries,
       addLibraryEntry,
@@ -579,17 +725,21 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
       recordNavigatorCompleted,
       recordJourneyStarted,
       recordNextMoveStarted,
-      recordStageCompleted: recordStageCompletedCallback,
+      recordStageCompleted,
+      isSaving,
+      saveFailed,
     }),
     [
       notifications,
+      unreadCount,
       markNotificationRead,
       markAllNotificationsRead,
       clearNotifications,
       settings,
       updateSettings,
-      sessionEvents,
+      sessionEvents.length,
       realActivity,
+      hasStartedNextMove,
       completedStages,
       libraryEntries,
       addLibraryEntry,
@@ -598,11 +748,43 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
       recordNavigatorCompleted,
       recordJourneyStarted,
       recordNextMoveStarted,
-      recordStageCompletedCallback,
+      recordStageCompleted,
+      isSaving,
+      saveFailed,
     ],
   );
 
   return <WorkspaceStateContext.Provider value={value}>{children}</WorkspaceStateContext.Provider>;
+}
+
+/**
+ * Public provider. `hydration` is the journey payload loaded from the server
+ * for the signed-in user (null before it arrives or when nothing is saved).
+ * `navigatorAnswers` is the live shared navigator state, passed through so
+ * saves always persist the user's current answers, not a stale copy.
+ * The inner provider remounts when hydration transitions, so every slice of
+ * state seeds exactly once from the same payload — one state system, one
+ * hydration path.
+ */
+export function WorkspaceStateProvider({
+  children,
+  hydration = null,
+  navigatorAnswers,
+}: {
+  children: ReactNode;
+  hydration?: WorkspaceHydration | null;
+  navigatorAnswers?: NavigatorAnswers;
+}) {
+  const key = hydration === null ? 'pending' : 'ready';
+  return (
+    <WorkspaceStateProviderInner
+      key={key}
+      hydration={hydration}
+      navigatorAnswers={navigatorAnswers ?? {}}
+    >
+      {children}
+    </WorkspaceStateProviderInner>
+  );
 }
 
 export function useWorkspaceState(): WorkspaceStateValue {

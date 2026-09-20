@@ -196,7 +196,7 @@ export function LandingRoadmapProduct() {
                 Your next useful step might be the one you haven&apos;t taken yet.
               </h2>
               <p className="mx-auto mt-5 max-w-[30rem] text-[1rem] leading-7 text-[#C2C4E1]">
-                Start with a few questions. Leave with a direction, a stage, and a next move — free while Fluxrico is in preview.
+                Start with a few questions. Leave with a direction, a stage, and a next move — your first three days are free.
               </p>
               <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <Link href="/signup" className="landing-btn landing-btn-light group" data-testid="landing-final-cta">
@@ -264,8 +264,8 @@ export function LandingFooter() {
             <ul className="mt-4 space-y-2.5">
               {[
                 { label: 'Help & support', href: '/settings' },
-                { label: 'Privacy', href: '/settings' },
-                { label: 'Terms', href: '/settings' },
+                { label: 'Privacy', href: '/privacy' },
+                { label: 'Terms', href: '/terms' },
               ].map(({ label, href }) => (
                 <li key={label}>
                   <Link href={href} className="text-sm font-semibold text-[hsl(var(--landing-ink))] opacity-80 transition-opacity hover:opacity-100">

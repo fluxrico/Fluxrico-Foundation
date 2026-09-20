@@ -26,7 +26,10 @@ export type SubscriptionAccess = {
   state: SubscriptionState;
   /** Whether Pro-gated capabilities are currently allowed. == state === "pro" */
   hasProAccess: boolean;
-  /** Whole days left in the trial; 0 on the final day / when expired. */
+  /**
+   * Whole days left in the trial, rounded up so the final day still reads as
+   * 1; 0 only once the trial has actually expired.
+   */
   trialDaysRemaining: number;
   trialStartedAt: string;
   trialEndsAt: string;
@@ -52,8 +55,10 @@ export function deriveSubscriptionState(sub: UserSubscription, now: Date = new D
   const trialing = !pro && now.getTime() < sub.trialEndsAt.getTime();
 
   const state: SubscriptionState = pro ? "pro" : trialing ? "trialing" : "expired";
+  // Round up so the last day of the trial still honestly reports "1 day
+  // remaining" instead of collapsing to 0 while access is still active.
   const daysRemaining = trialing
-    ? Math.max(0, Math.floor((sub.trialEndsAt.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)))
+    ? Math.max(0, Math.ceil((sub.trialEndsAt.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)))
     : 0;
 
   return {
@@ -75,22 +80,21 @@ export function deriveSubscriptionState(sub: UserSubscription, now: Date = new D
   };
 }
 
-/** Start the 3-day trial at registration time. Called by the register route. */
-export async function provisionTrialForNewUser(userId: string, now: Date = new Date()): Promise<void> {
-  await db.insert(userSubscriptions).values({
-    userId,
-    trialStartedAt: now,
-    trialEndsAt: new Date(now.getTime() + TRIAL_DURATION_MS),
-  });
-}
-
 /**
- * Resolve the subscription for an existing user, lazily backfilling pre-Phase-1
- * accounts: their trial simply starts at first resolution, so nobody's account
- * is invalidated and no journey data is touched. Safe under concurrency —
- * a duplicate insert races to the primary key and re-reads instead.
+ * Ensure a subscription row exists for the user, lazily provisioning the
+ * 3-day trial at the first call. Callers all sit behind authenticated AND
+ * verified routes, so the trial starts when the user can actually use the
+ * workspace — not at registration, and never while the email is unverified.
+ *
+ * Safe under concurrency: a duplicate insert races to the primary key and
+ * re-reads instead. `trialDurationMs` defaults to the standard trial; the
+ * webhook path passes 0 for a directly-purchased account (no trial time).
  */
-export async function resolveSubscription(userId: string, now: Date = new Date()): Promise<SubscriptionAccess> {
+export async function ensureSubscriptionRow(
+  userId: string,
+  now: Date = new Date(),
+  trialDurationMs: number = TRIAL_DURATION_MS,
+): Promise<UserSubscription | null> {
   let [row] = await db.select().from(userSubscriptions).where(eq(userSubscriptions.userId, userId)).limit(1);
 
   if (!row) {
@@ -99,16 +103,27 @@ export async function resolveSubscription(userId: string, now: Date = new Date()
       .values({
         userId,
         trialStartedAt: now,
-        trialEndsAt: new Date(now.getTime() + TRIAL_DURATION_MS),
+        trialEndsAt: new Date(now.getTime() + trialDurationMs),
       })
       .onConflictDoNothing({ target: userSubscriptions.userId })
       .returning();
     row = inserted[0] ?? (await db.select().from(userSubscriptions).where(eq(userSubscriptions.userId, userId)).limit(1))[0];
   }
 
+  return row ?? null;
+}
+
+/**
+ * Resolve the subscription for an existing user, lazily provisioning the
+ * trial row on first verified access. Fail-closed: an unresolved row reads
+ * as expired, never as access.
+ */
+export async function resolveSubscription(userId: string, now: Date = new Date()): Promise<SubscriptionAccess> {
+  const row = await ensureSubscriptionRow(userId, now);
+
   if (!row) {
-    // The user row exists but resolution failed; fail closed to expired so
-    // access is never granted on an unresolved state.
+    // Resolution failed; fail closed to expired so access is never granted
+    // on an unresolved state.
     return {
       state: "expired",
       hasProAccess: false,
@@ -123,3 +138,4 @@ export async function resolveSubscription(userId: string, now: Date = new Date()
 }
 
 export type { UserSubscription };
+export { TRIAL_DURATION_MS };

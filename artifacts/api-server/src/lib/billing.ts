@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { billingWebhookEvents, userSubscriptions, type UserSubscription } from "@workspace/db/schema";
 import { fetchSubscription, paddleServerConfigured } from "./paddle";
+import { ensureSubscriptionRow } from "./subscription";
 
 /**
  * Billing event core — Paddle → Fluxrico subscription state.
@@ -135,10 +136,11 @@ export async function applySubscriptionEvent(sub: SubscriptionLike): Promise<str
   const userId = userIdFromCustomData(sub.custom_data);
   if (userId == null) return null;
 
-  // The user's existing row (trial state) must exist; provisioning happens at
-  // registration. If it does not, resolve lazily via the backfill path by
-  // reading the row through the same helper the access layer uses.
-  const [row] = await db.select().from(userSubscriptions).where(eq(userSubscriptions.userId, userId)).limit(1);
+  // Ensure the row exists. The webhook can legitimately be the first write
+  // for an account (purchase without a prior resolved trial row): the trial
+  // fields are provisioned with zero duration, since the user paid directly
+  // and has no trial left to spend. Existing rows keep their trial values.
+  const row = await ensureSubscriptionRow(userId, new Date(), 0);
   if (row == null) return null;
 
   const price = sub.items?.[0]?.price;

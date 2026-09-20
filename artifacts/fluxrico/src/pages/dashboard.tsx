@@ -110,7 +110,7 @@ export default function Dashboard() {
                 <div className="min-w-0">
                   <p className="text-sm font-bold text-[#7A5232]">Your free trial has ended.</p>
                   <p className="mt-1 text-xs leading-5 text-[#8A7460]">
-                    Your journey, roadmap, and library are exactly as you left them. Pro keeps the advanced capabilities moving.
+                    Your journey, roadmap, and library are exactly as you left them. Pro keeps your full workspace going after the trial.
                   </p>
                 </div>
                 <Link

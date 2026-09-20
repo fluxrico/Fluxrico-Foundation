@@ -50,11 +50,13 @@ export function setSessionCookie(res: Response, sessionId: string, expiresAt: Da
   });
 }
 
-export function clearSessionCookie(res: Response): void {
+export function clearSessionCookie(res: Response, req?: Request): void {
   res.clearCookie(SESSION_COOKIE_NAME, {
     httpOnly: true,
     sameSite: "lax",
-    secure: isProduction,
+    // Mirror setSessionCookie's rules so the removal attributes match how
+    // the cookie was written — required for reliable clearing.
+    secure: req ? cookieSecure(req) : isProduction,
     path: "/",
   });
 }
@@ -111,5 +113,5 @@ export async function requireUser(
 export async function destroyCurrentSession(req: Request, res: Response): Promise<void> {
   const sessionId = readSessionId(req);
   if (sessionId) await destroySession(sessionId);
-  clearSessionCookie(res);
+  clearSessionCookie(res, req);
 }

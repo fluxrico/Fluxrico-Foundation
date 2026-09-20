@@ -5,6 +5,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import Landing from '@/pages/landing';
+import { PrivacyPolicy, TermsOfService } from '@/pages/legal';
 import NotFound from '@/pages/not-found';
 import SignUp from '@/pages/signup';
 import SignIn from '@/pages/signin';
@@ -20,11 +21,8 @@ import Notifications from '@/pages/notifications';
 import Profile from '@/pages/profile';
 import Settings from '@/pages/settings';
 import Pro from '@/pages/pro';
-import { NavigatorStateProvider } from '@/components/navigator-state';
-import { WorkspaceStateProvider } from '@/lib/workspace-state';
 import { AuthStateProvider } from '@/lib/auth-state';
-import { SubscriptionStateProvider } from '@/lib/subscription-state';
-import { RequireAuth } from '@/components/require-auth';
+import WorkspaceProviders from '@/components/workspace-providers';
 
 const queryClient = new QueryClient();
 
@@ -47,22 +45,15 @@ function WorkspaceRoutes() {
 
 /**
  * Workspace providers wrap only the authenticated area. When sign-out flips
- * auth state, the tree unmounts and remounts on the next sign-in, discarding
- * all session-specific workspace state (Navigator answers, notifications,
- * settings, library pieces, journey events). signOut() also clears any
- * persisted session-scoped keys before the guard redirects.
+ * auth state, the tree unmounts and remounts on the next sign-in; workspace
+ * state is hydrated from the server on every mount, so the journey survives
+ * refreshes, sign-outs, and new sessions.
  */
 function AuthenticatedWorkspace() {
   return (
-    <RequireAuth>
-      <SubscriptionStateProvider>
-        <NavigatorStateProvider>
-          <WorkspaceStateProvider>
-            <WorkspaceRoutes />
-          </WorkspaceStateProvider>
-        </NavigatorStateProvider>
-      </SubscriptionStateProvider>
-    </RequireAuth>
+    <WorkspaceProviders>
+      <WorkspaceRoutes />
+    </WorkspaceProviders>
   );
 }
 
@@ -73,6 +64,8 @@ function Router() {
     <RoutedErrorBoundary>
       <Switch>
         <Route path="/" component={Landing} />
+        <Route path="/terms" component={TermsOfService} />
+        <Route path="/privacy" component={PrivacyPolicy} />
         <Route path="/signup" component={SignUp} />
         <Route path="/signin" component={SignIn} />
         <Route path="/forgot-password" component={ForgotPassword} />

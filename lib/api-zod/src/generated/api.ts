@@ -250,3 +250,203 @@ export const CreateBillingPortalSessionResponse = zod.object({
 })
 
 
+/**
+ * Returns the persisted journey/workspace payload for the authenticated
+ * user, or `{ journey: null }` when nothing has been saved yet. Every
+ * workspace surface reads this instead of keeping its own store.
+ * @summary Load the signed-in user's journey state
+ */
+export const GetJourneyResponse = zod.object({
+  "journey": zod.unknown().nullable().describe('The stored payload, or null when nothing has been saved yet.')
+})
+
+
+/**
+ * Validates and stores the journey/workspace payload server-side. The
+ * payload shape is enforced by the server schema; unknown fields are
+ * rejected so the stored state can always be trusted. Server stamps
+ * updatedAt; client values for it are ignored.
+ * @summary Save the signed-in user's journey state
+ */
+export const saveJourneyBodyNavigatorAnswersGoalMax = 120;
+
+export const saveJourneyBodyNavigatorAnswersCurrentMax = 120;
+
+export const saveJourneyBodyNavigatorAnswersStrengthMax = 120;
+
+export const saveJourneyBodyNavigatorAnswersPathMax = 120;
+
+export const saveJourneyBodyCompletedStagesMax = 6;
+
+export const saveJourneyBodyLibraryEntriesItemIdMax = 80;
+
+export const saveJourneyBodyLibraryEntriesItemTitleMax = 300;
+
+export const saveJourneyBodyLibraryEntriesItemExcerptMax = 4000;
+
+export const saveJourneyBodyLibraryEntriesItemDateMax = 60;
+
+export const saveJourneyBodyLibraryEntriesMax = 500;
+
+export const saveJourneyBodyEventsItemStampMax = 60;
+
+export const saveJourneyBodyEventsMax = 200;
+
+export const saveJourneyBodyNotificationReadIdsItemMax = 120;
+
+export const saveJourneyBodyNotificationReadIdsMax = 200;
+
+export const saveJourneyBodySettingsDisplayNameMax = 120;
+
+export const saveJourneyBodySettingsEmailMax = 254;
+
+
+
+export const SaveJourneyBody = zod.object({
+  "navigatorAnswers": zod.object({
+  "goal": zod.string().max(saveJourneyBodyNavigatorAnswersGoalMax).optional(),
+  "current": zod.string().max(saveJourneyBodyNavigatorAnswersCurrentMax).optional(),
+  "strength": zod.string().max(saveJourneyBodyNavigatorAnswersStrengthMax).optional(),
+  "path": zod.string().max(saveJourneyBodyNavigatorAnswersPathMax).optional()
+}).optional().describe('Navigator answers keyed by step; omitted when not taken.'),
+  "completedStages": zod.array(zod.enum(['Start', 'Shape', 'Move', 'Build', 'Launch', 'Grow'])).max(saveJourneyBodyCompletedStagesMax).describe('Stages completed through real work, in canonical stage order.'),
+  "libraryEntries": zod.array(zod.object({
+  "id": zod.string().max(saveJourneyBodyLibraryEntriesItemIdMax),
+  "kind": zod.enum(['Idea', 'Note', 'Resource', 'Output']),
+  "title": zod.string().max(saveJourneyBodyLibraryEntriesItemTitleMax),
+  "excerpt": zod.string().max(saveJourneyBodyLibraryEntriesItemExcerptMax),
+  "date": zod.string().max(saveJourneyBodyLibraryEntriesItemDateMax),
+  "stage": zod.enum(['Start', 'Shape', 'Move', 'Build', 'Launch', 'Grow']).nullish(),
+  "saved": zod.boolean().nullish(),
+  "sample": zod.boolean().nullish()
+})).max(saveJourneyBodyLibraryEntriesMax).describe('Library pieces (sample seeds and user-added pieces).'),
+  "events": zod.array(zod.object({
+  "key": zod.enum(['navigator-completed', 'journey-started', 'next-move-started', 'stage-completed', 'library-piece-added', 'library-piece-saved']),
+  "stamp": zod.string().max(saveJourneyBodyEventsItemStampMax),
+  "stage": zod.enum(['Start', 'Shape', 'Move', 'Build', 'Launch', 'Grow']).nullish()
+})).max(saveJourneyBodyEventsMax).describe('Real session journey events already recorded for this account.'),
+  "notificationReadIds": zod.array(zod.string().max(saveJourneyBodyNotificationReadIdsItemMax)).max(saveJourneyBodyNotificationReadIdsMax).describe('Notification ids already read (samples plus real events).'),
+  "clearedNotifications": zod.boolean().describe('True when the user cleared the whole notification feed.'),
+  "settings": zod.object({
+  "displayName": zod.string().max(saveJourneyBodySettingsDisplayNameMax).optional(),
+  "email": zod.string().max(saveJourneyBodySettingsEmailMax).optional(),
+  "emailDigest": zod.boolean().optional(),
+  "productUpdates": zod.boolean().optional(),
+  "journeyReminders": zod.boolean().optional(),
+  "compactMode": zod.boolean().optional(),
+  "reducedMotion": zod.boolean().optional()
+}).describe('Workspace settings (notification + presentation toggles and identity).'),
+  "hasStartedNextMove": zod.boolean()
+}).describe('The validated journey\/workspace envelope. The server owns the shape so\nthe stored state can always be trusted; the client persists the whole\nworkspace snapshot it derives from its single shared state system.')
+
+export const SaveJourneyResponse = zod.object({
+  "status": zod.string(),
+  "savedAt": zod.coerce.date().describe('Server-stamped time of the accepted write.')
+})
+
+
+/**
+ * Updates the account's display name server-side. Email changes are not
+ * offered in this phase (they require a verified-change flow); the
+ * response includes the updated user.
+ * @summary Update the signed-in user's name
+ */
+export const updateAccountBodyNameMin = 2;
+export const updateAccountBodyNameMax = 120;
+
+
+
+export const UpdateAccountBody = zod.object({
+  "name": zod.string().min(updateAccountBodyNameMin).max(updateAccountBodyNameMax)
+})
+
+export const UpdateAccountResponse = zod.object({
+  "user": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "emailVerified": zod.boolean()
+})
+})
+
+
+/**
+ * Requires the current password, sets a new one, and revokes every
+ * other session (the current device stays signed in).
+ * @summary Change the password of the signed-in user
+ */
+export const changePasswordBodyCurrentPasswordMax = 200;
+
+export const changePasswordBodyNewPasswordMin = 8;
+export const changePasswordBodyNewPasswordMax = 200;
+
+
+
+export const ChangePasswordBody = zod.object({
+  "currentPassword": zod.string().min(1).max(changePasswordBodyCurrentPasswordMax),
+  "newPassword": zod.string().min(changePasswordBodyNewPasswordMin).max(changePasswordBodyNewPasswordMax)
+})
+
+export const ChangePasswordResponse = zod.object({
+  "status": zod.string(),
+  "message": zod.string().optional()
+})
+
+
+/**
+ * Returns the account's non-expired sessions, newest first, including
+ * whether each row is the current one. Only metadata — never session ids.
+ * @summary List the account's active sessions
+ */
+export const ListSessionsResponse = zod.object({
+  "sessions": zod.array(zod.object({
+  "id": zod.string().describe('Opaque row identifier for display keys only — never the credential.'),
+  "current": zod.boolean().describe('True when this row is the session making the request.'),
+  "createdAt": zod.coerce.date(),
+  "expiresAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * Revokes all of the account's sessions except the current one.
+ * @summary Sign out every other session
+ */
+export const RevokeOtherSessionsResponse = zod.object({
+  "status": zod.string(),
+  "revoked": zod.number().int()
+})
+
+
+/**
+ * Returns a single JSON document with the account profile, subscription
+ * state, journey data, and webhook event count. Intended for the
+ * Settings data-export control.
+ * @summary Export the account's data as JSON
+ */
+export const ExportAccountDataResponse = zod.object({
+  "account": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "emailVerified": zod.boolean(),
+  "createdAt": zod.coerce.date()
+}),
+  "subscription": zod.unknown().nullable().describe('The server-derived subscription state at export time.'),
+  "journey": zod.unknown().nullable().describe('The stored journey payload, or null when never saved.'),
+  "billingEventsRecorded": zod.number().int().describe('Number of billing webhook events recorded for this account\'s purchases.'),
+  "exportedAt": zod.coerce.date()
+})
+
+
+/**
+ * Permanently deletes the user row; every dependent row (sessions,
+ * tokens, subscription, journey) is removed by ON DELETE CASCADE.
+ * Destroys the current session and clears the cookie. Billing must be
+ * cancelled by the user in the Paddle portal first; Paddle retains its
+ * own customer/transaction records as the payment processor.
+ * @summary Delete the account and all of its data
+ */
+export const DeleteAccountResponse = zod.void()
+
+

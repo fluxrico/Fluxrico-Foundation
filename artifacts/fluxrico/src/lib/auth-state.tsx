@@ -39,6 +39,10 @@ type AuthStateValue = {
   signUp: (input: SignUpInput) => Promise<SignUpResult>;
   signIn: (input: { email: string; password: string }) => Promise<{ ok: boolean; error?: SignInError }>;
   signOut: () => Promise<void>;
+  /** Re-reads /api/auth/me after server-side account changes (name, etc.). */
+  refreshUser: () => Promise<void>;
+  /** Applies a known user object after a successful in-place update. */
+  setUser: (user: AuthUser | null) => void;
 };
 
 export type SignInError = 'invalid-credentials' | 'email-not-verified' | 'network' | 'unknown';
@@ -151,6 +155,19 @@ export function AuthStateProvider({ children }: { children: ReactNode }) {
     setStatus('signed-out');
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const response = await me();
+      setUser(response.user);
+      setStatus('authenticated');
+    } catch {
+      // Session gone or transient failure: reflect signed-out rather than a
+      // stale identity. The guard redirects on the next render.
+      setUser(null);
+      setStatus('signed-out');
+    }
+  }, []);
+
   const value = useMemo<AuthStateValue>(
     () => ({
       user,
@@ -159,8 +176,10 @@ export function AuthStateProvider({ children }: { children: ReactNode }) {
       signUp,
       signIn,
       signOut,
+      refreshUser,
+      setUser,
     }),
-    [user, status, signUp, signIn, signOut],
+    [user, status, signUp, signIn, signOut, refreshUser],
   );
 
   return <AuthStateContext.Provider value={value}>{children}</AuthStateContext.Provider>;

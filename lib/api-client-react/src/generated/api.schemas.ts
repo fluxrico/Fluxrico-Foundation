@@ -198,3 +198,217 @@ export interface BillingPortalSessionResponse {
   url: string;
 }
 
+export interface UpdateAccountRequest {
+  /**
+     * @minLength 2
+     * @maxLength 120
+     */
+  name: string;
+}
+
+export interface ChangePasswordRequest {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  currentPassword: string;
+  /**
+     * @minLength 8
+     * @maxLength 200
+     */
+  newPassword: string;
+}
+
+export interface SessionInfo {
+  /** Opaque row identifier for display keys only — never the credential. */
+  id: string;
+  /** True when this row is the session making the request. */
+  current: boolean;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface SessionListResponse {
+  sessions: SessionInfo[];
+}
+
+export interface SessionRevokeResult {
+  status: string;
+  revoked: number;
+}
+
+export interface JourneyResponse {
+  /** The stored payload, or null when nothing has been saved yet. */
+  journey: unknown | null;
+}
+
+/**
+ * Navigator answers keyed by step; omitted when not taken.
+ */
+export type JourneySaveRequestNavigatorAnswers = {
+  /** @maxLength 120 */
+  goal?: string;
+  /** @maxLength 120 */
+  current?: string;
+  /** @maxLength 120 */
+  strength?: string;
+  /** @maxLength 120 */
+  path?: string;
+};
+
+export type JourneySaveRequestCompletedStagesItem = typeof JourneySaveRequestCompletedStagesItem[keyof typeof JourneySaveRequestCompletedStagesItem];
+
+
+export const JourneySaveRequestCompletedStagesItem = {
+  Start: 'Start',
+  Shape: 'Shape',
+  Move: 'Move',
+  Build: 'Build',
+  Launch: 'Launch',
+  Grow: 'Grow',
+} as const;
+
+export type JourneySaveRequestLibraryEntriesItemKind = typeof JourneySaveRequestLibraryEntriesItemKind[keyof typeof JourneySaveRequestLibraryEntriesItemKind];
+
+
+export const JourneySaveRequestLibraryEntriesItemKind = {
+  Idea: 'Idea',
+  Note: 'Note',
+  Resource: 'Resource',
+  Output: 'Output',
+} as const;
+
+export type JourneySaveRequestLibraryEntriesItemStage = typeof JourneySaveRequestLibraryEntriesItemStage[keyof typeof JourneySaveRequestLibraryEntriesItemStage] | null;
+
+
+export const JourneySaveRequestLibraryEntriesItemStage = {
+  Start: 'Start',
+  Shape: 'Shape',
+  Move: 'Move',
+  Build: 'Build',
+  Launch: 'Launch',
+  Grow: 'Grow',
+} as const;
+
+export type JourneySaveRequestLibraryEntriesItem = {
+  /** @maxLength 80 */
+  id: string;
+  kind: JourneySaveRequestLibraryEntriesItemKind;
+  /** @maxLength 300 */
+  title: string;
+  /** @maxLength 4000 */
+  excerpt: string;
+  /** @maxLength 60 */
+  date: string;
+  stage?: JourneySaveRequestLibraryEntriesItemStage;
+  saved?: boolean | null;
+  sample?: boolean | null;
+};
+
+export type JourneySaveRequestEventsItemKey = typeof JourneySaveRequestEventsItemKey[keyof typeof JourneySaveRequestEventsItemKey];
+
+
+export const JourneySaveRequestEventsItemKey = {
+  'navigator-completed': 'navigator-completed',
+  'journey-started': 'journey-started',
+  'next-move-started': 'next-move-started',
+  'stage-completed': 'stage-completed',
+  'library-piece-added': 'library-piece-added',
+  'library-piece-saved': 'library-piece-saved',
+} as const;
+
+export type JourneySaveRequestEventsItemStage = typeof JourneySaveRequestEventsItemStage[keyof typeof JourneySaveRequestEventsItemStage] | null;
+
+
+export const JourneySaveRequestEventsItemStage = {
+  Start: 'Start',
+  Shape: 'Shape',
+  Move: 'Move',
+  Build: 'Build',
+  Launch: 'Launch',
+  Grow: 'Grow',
+} as const;
+
+export type JourneySaveRequestEventsItem = {
+  key: JourneySaveRequestEventsItemKey;
+  /** @maxLength 60 */
+  stamp: string;
+  stage?: JourneySaveRequestEventsItemStage;
+};
+
+/**
+ * Workspace settings (notification + presentation toggles and identity).
+ */
+export type JourneySaveRequestSettings = {
+  /** @maxLength 120 */
+  displayName?: string;
+  /** @maxLength 254 */
+  email?: string;
+  emailDigest?: boolean;
+  productUpdates?: boolean;
+  journeyReminders?: boolean;
+  compactMode?: boolean;
+  reducedMotion?: boolean;
+};
+
+/**
+ * The validated journey/workspace envelope. The server owns the shape so
+ * the stored state can always be trusted; the client persists the whole
+ * workspace snapshot it derives from its single shared state system.
+ */
+export interface JourneySaveRequest {
+  /** Navigator answers keyed by step; omitted when not taken. */
+  navigatorAnswers?: JourneySaveRequestNavigatorAnswers;
+  /**
+     * Stages completed through real work, in canonical stage order.
+     * @maxItems 6
+     */
+  completedStages: JourneySaveRequestCompletedStagesItem[];
+  /**
+     * Library pieces (sample seeds and user-added pieces).
+     * @maxItems 500
+     */
+  libraryEntries: JourneySaveRequestLibraryEntriesItem[];
+  /**
+     * Real session journey events already recorded for this account.
+     * @maxItems 200
+     */
+  events: JourneySaveRequestEventsItem[];
+  /**
+     * Notification ids already read (samples plus real events).
+     * @maxItems 200
+     * @items.maxLength 120
+     */
+  notificationReadIds: string[];
+  /** True when the user cleared the whole notification feed. */
+  clearedNotifications: boolean;
+  /** Workspace settings (notification + presentation toggles and identity). */
+  settings: JourneySaveRequestSettings;
+  hasStartedNextMove: boolean;
+}
+
+export interface JourneySaveResult {
+  status: string;
+  /** Server-stamped time of the accepted write. */
+  savedAt: string;
+}
+
+export type AccountExportAccount = {
+  id: string;
+  name: string;
+  email: string;
+  emailVerified: boolean;
+  createdAt: string;
+};
+
+export interface AccountExport {
+  account: AccountExportAccount;
+  /** The server-derived subscription state at export time. */
+  subscription: unknown | null;
+  /** The stored journey payload, or null when never saved. */
+  journey: unknown | null;
+  /** Number of billing webhook events recorded for this account's purchases. */
+  billingEventsRecorded: number;
+  exportedAt: string;
+}
+
