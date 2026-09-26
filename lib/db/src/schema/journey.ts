@@ -1,6 +1,6 @@
 import { index, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
-import { users } from "./auth";
+import { users } from "./auth.js";
 
 /**
  * Server-side journey state — one row per user.

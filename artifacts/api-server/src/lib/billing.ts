@@ -5,10 +5,10 @@ import { and, eq } from "drizzle-orm";
 // Node runtime, where traced .ts files are transpiled and renamed to .js.
 // Extensionless relative specifiers resolve in every mode: TypeScript
 // (bundler), esbuild, and the Vercel runtime (extensionless file fallback).
-import { db } from "../../../../lib/db/src/index";
-import { billingWebhookEvents, userSubscriptions, type UserSubscription } from "../../../../lib/db/src/schema/index";
-import { fetchSubscription, paddleServerConfigured } from "./paddle";
-import { ensureSubscriptionRow } from "./subscription";
+import { db } from "../../../../lib/db/src/index.js";
+import { billingWebhookEvents, userSubscriptions, type UserSubscription } from "../../../../lib/db/src/schema/index.js";
+import { fetchSubscription, paddleServerConfigured } from "./paddle.js";
+import { ensureSubscriptionRow } from "./subscription.js";
 
 /**
  * Billing event core — Paddle → Fluxrico subscription state.

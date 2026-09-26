@@ -5,11 +5,11 @@
  * API specification
  * OpenAPI spec version: 0.2.0
  */
-import type { JourneySaveRequestCompletedStagesItem } from './journeySaveRequestCompletedStagesItem';
-import type { JourneySaveRequestEventsItem } from './journeySaveRequestEventsItem';
-import type { JourneySaveRequestLibraryEntriesItem } from './journeySaveRequestLibraryEntriesItem';
-import type { JourneySaveRequestNavigatorAnswers } from './journeySaveRequestNavigatorAnswers';
-import type { JourneySaveRequestSettings } from './journeySaveRequestSettings';
+import type { JourneySaveRequestCompletedStagesItem } from './journeySaveRequestCompletedStagesItem.js';
+import type { JourneySaveRequestEventsItem } from './journeySaveRequestEventsItem.js';
+import type { JourneySaveRequestLibraryEntriesItem } from './journeySaveRequestLibraryEntriesItem.js';
+import type { JourneySaveRequestNavigatorAnswers } from './journeySaveRequestNavigatorAnswers.js';
+import type { JourneySaveRequestSettings } from './journeySaveRequestSettings.js';
 
 /**
  * The validated journey/workspace envelope. The server owns the shape so

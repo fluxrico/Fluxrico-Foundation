@@ -5,7 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.2.0
  */
-import type { AuthUser } from './authUser';
+import type { AuthUser } from './authUser.js';
 
 export interface RegisterResult {
   user: AuthUser;

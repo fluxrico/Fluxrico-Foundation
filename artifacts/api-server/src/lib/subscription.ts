@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 // Extensionless relative specifiers: see lib/billing.ts for the rationale.
-import { db } from "../../../../lib/db/src/index";
-import { userSubscriptions, type UserSubscription } from "../../../../lib/db/src/schema/index";
+import { db } from "../../../../lib/db/src/index.js";
+import { userSubscriptions, type UserSubscription } from "../../../../lib/db/src/schema/index.js";
 
 /**
  * Subscription access model — server-side source of truth.

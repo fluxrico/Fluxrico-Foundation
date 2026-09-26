@@ -3,25 +3,25 @@ import { eq } from "drizzle-orm";
 // Extensionless relative specifiers: see lib/billing.ts for the rationale
 // (bare @workspace/* exports point at .ts sources, unresolvable in the
 // Vercel classic Node runtime).
-import { db } from "../../../../lib/db/src/index";
-import { sessions, users } from "../../../../lib/db/src/schema/index";
+import { db } from "../../../../lib/db/src/index.js";
+import { sessions, users } from "../../../../lib/db/src/schema/index.js";
 import {
   LoginBody,
   ForgotPasswordBody,
   RegisterBody,
   ResetPasswordBody,
   VerifyEmailBody,
-} from "../../../../lib/api-zod/src/index";
-import { HttpError, sendError } from "../lib/errors";
-import { hashPassword, verifyPassword } from "../lib/password";
-import { issueToken, consumeToken, consumeAllTokens } from "../lib/tokens";
-import { isEmailDeliveryConfigured, sendEmail, verificationEmail, passwordResetEmail } from "../lib/email";
+} from "../../../../lib/api-zod/src/index.js";
+import { HttpError, sendError } from "../lib/errors.js";
+import { hashPassword, verifyPassword } from "../lib/password.js";
+import { issueToken, consumeToken, consumeAllTokens } from "../lib/tokens.js";
+import { isEmailDeliveryConfigured, sendEmail, verificationEmail, passwordResetEmail } from "../lib/email.js";
 import {
   createSession,
   destroyCurrentSession,
   getSessionUser,
   setSessionCookie,
-} from "../lib/session";
+} from "../lib/session.js";
 
 const router: IRouter = Router();
 

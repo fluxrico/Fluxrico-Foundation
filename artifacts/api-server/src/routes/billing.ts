@@ -1,7 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { requireUser } from "../lib/session";
-import { requireProAccess } from "./subscription";
-import { sendError, HttpError } from "../lib/errors";
+import { requireUser } from "../lib/session.js";
+import { requireProAccess } from "./subscription.js";
+import { sendError, HttpError } from "../lib/errors.js";
 import {
   createPortalSession,
   findCustomerIdForUser,
@@ -9,9 +9,9 @@ import {
   paddleClientConfigured,
   paddleServerConfigured,
   paddleEnv,
-} from "../lib/paddle";
-import { handlePaddleWebhook } from "../lib/billing";
-import { fetchSubscription } from "../lib/paddle";
+} from "../lib/paddle.js";
+import { handlePaddleWebhook } from "../lib/billing.js";
+import { fetchSubscription } from "../lib/paddle.js";
 
 /**
  * Billing routes (Phase 2: Paddle).

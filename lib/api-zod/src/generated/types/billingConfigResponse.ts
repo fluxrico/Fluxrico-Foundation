@@ -5,7 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.2.0
  */
-import type { BillingConfigResponseBilling } from './billingConfigResponseBilling';
+import type { BillingConfigResponseBilling } from './billingConfigResponseBilling.js';
 
 export interface BillingConfigResponse {
   billing: BillingConfigResponseBilling;

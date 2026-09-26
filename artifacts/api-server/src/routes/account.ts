@@ -3,13 +3,13 @@ import { and, desc, eq, gt, ne } from "drizzle-orm";
 // Extensionless relative specifiers: see lib/billing.ts for the rationale
 // (bare @workspace/* exports point at .ts sources, unresolvable in the
 // Vercel classic Node runtime).
-import { db } from "../../../../lib/db/src/index";
-import { sessions, userJourney, userSubscriptions, users } from "../../../../lib/db/src/schema/index";
-import { ChangePasswordBody, UpdateAccountBody } from "../../../../lib/api-zod/src/index";
-import { requireUser, getSessionUser } from "../lib/session";import { hashPassword, verifyPassword } from "../lib/password";
-import { clearSessionCookie, destroyCurrentSession } from "../lib/session";
-import { resolveSubscription } from "../lib/subscription";
-import { sendError, HttpError } from "../lib/errors";
+import { db } from "../../../../lib/db/src/index.js";
+import { sessions, userJourney, userSubscriptions, users } from "../../../../lib/db/src/schema/index.js";
+import { ChangePasswordBody, UpdateAccountBody } from "../../../../lib/api-zod/src/index.js";
+import { requireUser, getSessionUser } from "../lib/session.js";import { hashPassword, verifyPassword } from "../lib/password.js";
+import { clearSessionCookie, destroyCurrentSession } from "../lib/session.js";
+import { resolveSubscription } from "../lib/subscription.js";
+import { sendError, HttpError } from "../lib/errors.js";
 
 /**
  * Account self-service routes.

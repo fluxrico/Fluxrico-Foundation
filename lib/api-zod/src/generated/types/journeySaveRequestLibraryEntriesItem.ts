@@ -5,8 +5,8 @@
  * API specification
  * OpenAPI spec version: 0.2.0
  */
-import type { JourneySaveRequestLibraryEntriesItemKind } from './journeySaveRequestLibraryEntriesItemKind';
-import type { JourneySaveRequestLibraryEntriesItemStage } from './journeySaveRequestLibraryEntriesItemStage';
+import type { JourneySaveRequestLibraryEntriesItemKind } from './journeySaveRequestLibraryEntriesItemKind.js';
+import type { JourneySaveRequestLibraryEntriesItemStage } from './journeySaveRequestLibraryEntriesItemStage.js';
 
 export type JourneySaveRequestLibraryEntriesItem = {
   /** @maxLength 80 */

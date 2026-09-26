@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 // Extensionless relative specifiers: see lib/billing.ts for the rationale
 // (bare @workspace/* exports point at .ts sources, unresolvable in the
 // Vercel classic Node runtime).
-import { HealthCheckResponse } from "../../../../lib/api-zod/src/index";
+import { HealthCheckResponse } from "../../../../lib/api-zod/src/index.js";
 
 const router: IRouter = Router();
 

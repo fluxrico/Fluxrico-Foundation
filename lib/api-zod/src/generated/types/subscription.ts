@@ -5,8 +5,8 @@
  * API specification
  * OpenAPI spec version: 0.2.0
  */
-import type { SubscriptionPlan } from './subscriptionPlan';
-import type { SubscriptionState } from './subscriptionState';
+import type { SubscriptionPlan } from './subscriptionPlan.js';
+import type { SubscriptionState } from './subscriptionState.js';
 
 export interface Subscription {
   /** Server-derived access state. hasProAccess is true only for "pro". */

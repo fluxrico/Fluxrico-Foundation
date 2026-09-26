@@ -5,8 +5,8 @@
  * API specification
  * OpenAPI spec version: 0.2.0
  */
-import type { JourneySaveRequestEventsItemKey } from './journeySaveRequestEventsItemKey';
-import type { JourneySaveRequestEventsItemStage } from './journeySaveRequestEventsItemStage';
+import type { JourneySaveRequestEventsItemKey } from './journeySaveRequestEventsItemKey.js';
+import type { JourneySaveRequestEventsItemStage } from './journeySaveRequestEventsItemStage.js';
 
 export type JourneySaveRequestEventsItem = {
   key: JourneySaveRequestEventsItemKey;

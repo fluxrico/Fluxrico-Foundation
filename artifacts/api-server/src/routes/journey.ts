@@ -4,11 +4,11 @@ import { z } from "zod/v4";
 // Extensionless relative specifiers: see lib/billing.ts for the rationale
 // (bare @workspace/* exports point at .ts sources, unresolvable in the
 // Vercel classic Node runtime).
-import { db } from "../../../../lib/db/src/index";
-import { userJourney } from "../../../../lib/db/src/schema/index";
-import { requireUser } from "../lib/session";
-import { sendError, HttpError } from "../lib/errors";
-import { SaveJourneyBody, type JourneySaveRequest } from "../../../../lib/api-zod/src/index";
+import { db } from "../../../../lib/db/src/index.js";
+import { userJourney } from "../../../../lib/db/src/schema/index.js";
+import { requireUser } from "../lib/session.js";
+import { sendError, HttpError } from "../lib/errors.js";
+import { SaveJourneyBody, type JourneySaveRequest } from "../../../../lib/api-zod/src/index.js";
 
 /**
  * Journey persistence routes — the server-side home of workspace state.

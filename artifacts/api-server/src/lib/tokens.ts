@@ -1,8 +1,8 @@
 import crypto from "node:crypto";
 import { and, eq, isNull } from "drizzle-orm";
 // Extensionless relative specifiers: see lib/billing.ts for the rationale.
-import { db } from "../../../../lib/db/src/index";
-import { verificationTokens } from "../../../../lib/db/src/schema/index";
+import { db } from "../../../../lib/db/src/index.js";
+import { verificationTokens } from "../../../../lib/db/src/schema/index.js";
 
 /**
  * Single-use, expiring email tokens (email verification and password reset).

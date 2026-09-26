@@ -5,7 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.2.0
  */
-import type { SessionInfo } from './sessionInfo';
+import type { SessionInfo } from './sessionInfo.js';
 
 export interface SessionListResponse {
   sessions: SessionInfo[];

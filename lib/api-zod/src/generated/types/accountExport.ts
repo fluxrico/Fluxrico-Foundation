@@ -5,7 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.2.0
  */
-import type { AccountExportAccount } from './accountExportAccount';
+import type { AccountExportAccount } from './accountExportAccount.js';
 
 export interface AccountExport {
   account: AccountExportAccount;

@@ -5,8 +5,8 @@
  * API specification
  * OpenAPI spec version: 0.2.0
  */
-import type { SubscriptionPlanInterval } from './subscriptionPlanInterval';
-import type { SubscriptionPlanStatus } from './subscriptionPlanStatus';
+import type { SubscriptionPlanInterval } from './subscriptionPlanInterval.js';
+import type { SubscriptionPlanStatus } from './subscriptionPlanStatus.js';
 
 /**
  * The active paid plan; null until a real subscription exists.

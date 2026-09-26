@@ -5,7 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.2.0
  */
-import type { Subscription } from './subscription';
+import type { Subscription } from './subscription.js';
 
 export interface SubscriptionAccessResponse {
   subscription: Subscription;

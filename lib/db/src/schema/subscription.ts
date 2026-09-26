@@ -1,7 +1,7 @@
 import { boolean, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { index, uniqueIndex } from "drizzle-orm/pg-core";
-import { users } from "./auth";
+import { users } from "./auth.js";
 
 /**
  * Subscription access foundation (Phase 1: Pro) + billing provider link

@@ -7,7 +7,7 @@ import { pinoHttp } from "pino-http";
 // (ERR_UNSUPPORTED_DIR_IMPORT); the explicit file specifier resolves for both
 // TypeScript (moduleResolution: bundler) and Node ESM.
 import router from "./routes/index.js";
-import { logger } from "./lib/logger";
+import { logger } from "./lib/logger.js";
 
 const app = express();
 

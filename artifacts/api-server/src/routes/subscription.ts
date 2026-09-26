@@ -3,13 +3,13 @@ import {
   resolveSubscription,
   TRIAL_DAYS,
   type SubscriptionAccess,
-} from "../lib/subscription";
-import { requireUser } from "../lib/session";
-import { sendError } from "../lib/errors";
+} from "../lib/subscription.js";
+import { requireUser } from "../lib/session.js";
+import { sendError } from "../lib/errors.js";
 // Extensionless relative specifiers: see lib/billing.ts for the rationale
 // (bare @workspace/* exports point at .ts sources, unresolvable in the
 // Vercel classic Node runtime).
-import type { users } from "../../../../lib/db/src/schema/index";
+import type { users } from "../../../../lib/db/src/schema/index.js";
 
 /**
  * Subscription / access foundation routes.

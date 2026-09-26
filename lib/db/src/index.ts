@@ -4,7 +4,7 @@ import pg from "pg";
 // (Vercel's TS runtime), where directory imports are unsupported
 // (ERR_UNSUPPORTED_DIR_IMPORT); see artifacts/api-server/src/app.ts.
 import * as schema from "./schema/index.js";
-import { resolvePostgresSsl } from "./ssl";
+import { resolvePostgresSsl } from "./ssl.js";
 
 const { Pool } = pg;
 
