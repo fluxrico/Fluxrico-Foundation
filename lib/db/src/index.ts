@@ -1,6 +1,9 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
-import * as schema from "./schema";
+// "./schema/index.js" (not "./schema"): executes as native ESM in production
+// (Vercel's TS runtime), where directory imports are unsupported
+// (ERR_UNSUPPORTED_DIR_IMPORT); see artifacts/api-server/src/app.ts.
+import * as schema from "./schema/index.js";
 import { resolvePostgresSsl } from "./ssl";
 
 const { Pool } = pg;
@@ -17,4 +20,4 @@ export const pool = new Pool({
 });
 export const db = drizzle(pool, { schema });
 
-export * from "./schema";
+export * from "./schema/index.js";

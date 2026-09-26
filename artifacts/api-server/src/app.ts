@@ -2,7 +2,11 @@ import express, { type Request } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { pinoHttp } from "pino-http";
-import router from "./routes";
+// "./routes/index.js" (not "./routes"): this file executes as native ESM in
+// production (Vercel's TS runtime), where directory imports are unsupported
+// (ERR_UNSUPPORTED_DIR_IMPORT); the explicit file specifier resolves for both
+// TypeScript (moduleResolution: bundler) and Node ESM.
+import router from "./routes/index.js";
 import { logger } from "./lib/logger";
 
 const app = express();
