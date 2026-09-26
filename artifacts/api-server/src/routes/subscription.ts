@@ -6,7 +6,10 @@ import {
 } from "../lib/subscription";
 import { requireUser } from "../lib/session";
 import { sendError } from "../lib/errors";
-import type { users } from "@workspace/db/schema";
+// Extensionless relative specifiers: see lib/billing.ts for the rationale
+// (bare @workspace/* exports point at .ts sources, unresolvable in the
+// Vercel classic Node runtime).
+import type { users } from "../../../../lib/db/src/schema/index";
 
 /**
  * Subscription / access foundation routes.

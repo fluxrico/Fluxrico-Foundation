@@ -1,11 +1,14 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
-import { db } from "@workspace/db";
-import { userJourney } from "@workspace/db/schema";
+// Extensionless relative specifiers: see lib/billing.ts for the rationale
+// (bare @workspace/* exports point at .ts sources, unresolvable in the
+// Vercel classic Node runtime).
+import { db } from "../../../../lib/db/src/index";
+import { userJourney } from "../../../../lib/db/src/schema/index";
 import { requireUser } from "../lib/session";
 import { sendError, HttpError } from "../lib/errors";
-import { SaveJourneyBody, type JourneySaveRequest } from "@workspace/api-zod";
+import { SaveJourneyBody, type JourneySaveRequest } from "../../../../lib/api-zod/src/index";
 
 /**
  * Journey persistence routes — the server-side home of workspace state.

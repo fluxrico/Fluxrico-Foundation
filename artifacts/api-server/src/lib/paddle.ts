@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
-import { db } from "@workspace/db";
-import { userSubscriptions } from "@workspace/db/schema";
+// Extensionless relative specifiers: see lib/billing.ts for the rationale.
+import { db } from "../../../../lib/db/src/index";
+import { userSubscriptions } from "../../../../lib/db/src/schema/index";
 
 /**
  * Server-side Paddle Billing API client — the only module that touches the

@@ -1,8 +1,11 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { and, desc, eq, gt, ne } from "drizzle-orm";
-import { db } from "@workspace/db";
-import { sessions, userJourney, userSubscriptions, users } from "@workspace/db/schema";
-import { ChangePasswordBody, UpdateAccountBody } from "@workspace/api-zod";
+// Extensionless relative specifiers: see lib/billing.ts for the rationale
+// (bare @workspace/* exports point at .ts sources, unresolvable in the
+// Vercel classic Node runtime).
+import { db } from "../../../../lib/db/src/index";
+import { sessions, userJourney, userSubscriptions, users } from "../../../../lib/db/src/schema/index";
+import { ChangePasswordBody, UpdateAccountBody } from "../../../../lib/api-zod/src/index";
 import { requireUser, getSessionUser } from "../lib/session";import { hashPassword, verifyPassword } from "../lib/password";
 import { clearSessionCookie, destroyCurrentSession } from "../lib/session";
 import { resolveSubscription } from "../lib/subscription";

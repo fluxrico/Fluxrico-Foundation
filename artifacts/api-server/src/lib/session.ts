@@ -1,8 +1,9 @@
 import crypto from "node:crypto";
 import { and, eq, gt } from "drizzle-orm";
 import type { Request, Response } from "express";
-import { db } from "@workspace/db";
-import { sessions, users } from "@workspace/db/schema";
+// Extensionless relative specifiers: see lib/billing.ts for the rationale.
+import { db } from "../../../../lib/db/src/index";
+import { sessions, users } from "../../../../lib/db/src/schema/index";
 
 /**
  * HTTP-only cookie sessions backed by a server-side sessions table.
