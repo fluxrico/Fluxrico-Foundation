@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://fluxrico-foundation-api.vercel.app/api/:path*"
+      "destination": "https://fluxrico-foundation-api-three.vercel.app/api/:path*"
     },
     {
       "source": "/(.*)",
