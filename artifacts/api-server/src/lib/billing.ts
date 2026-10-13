@@ -108,6 +108,27 @@ function localStatusFor(paddleStatus: PaddleSubscriptionStatusLike): "active" | 
 
 type PaddleSubscriptionStatusLike = "active" | "trialing" | "past_due" | "paused" | "canceled";
 
+/**
+ * Where the subscription state in a call to applySubscriptionEvent came
+ * from — selects whether staleness guards apply. "fetched" means the state
+ * was read live from Paddle's API (current provider truth, applied as-is);
+ * "payload" means the state was reconstructed from a signature-verified
+ * webhook payload, which may be an old, out-of-order redelivery.
+ */
+export type EventSource = "fetched" | "payload";
+
+/**
+ * Parse an event's occurred_at strictly into a Date. Returns null for
+ * missing or unparseable values, so an invalid timestamp is never treated
+ * as proof of freshness anywhere downstream (it can only ever *reject* a
+ * suspect event, never grant it acceptance — see applySubscriptionEvent).
+ */
+export function parseOccurredAt(occurredAt: string | null | undefined): Date | null {
+  if (typeof occurredAt !== "string" || occurredAt.length === 0) return null;
+  const t = Date.parse(occurredAt);
+  return Number.isFinite(t) ? new Date(t) : null;
+}
+
 type SubscriptionLike = {
   id: string;
   status: PaddleSubscriptionStatusLike;
@@ -137,7 +158,11 @@ function billingIntervalFromPrice(price: { billing_cycle?: { interval: string; f
  * Returns the affected userId, or null when the event carries no usable
  * user link (nothing to do; never fabricates state).
  */
-export async function applySubscriptionEvent(sub: SubscriptionLike): Promise<string | null> {
+export async function applySubscriptionEvent(
+  sub: SubscriptionLike,
+  source: EventSource = "fetched",
+  occurredAt: string | null = null,
+): Promise<string | null> {
   const userId = userIdFromCustomData(sub.custom_data);
   if (userId == null) return null;
 
@@ -166,14 +191,108 @@ export async function applySubscriptionEvent(sub: SubscriptionLike): Promise<str
   updates.billingSubscriptionId = sub.id;
   if (price?.id != null) updates.billingPriceId = price.id;
 
-  updates.updatedAt = new Date();
-
   // Cancel-at-period-end semantics: the flag records intent; access itself
   // is derived at read time from status + currentPeriodEnd (paidAccessActive
   // keeps access until the period ends). Never revoke access eagerly.
   const canceledWithFuturePeriod =
     sub.status === "canceled" && periodEnd != null && periodEnd.getTime() > Date.now();
   updates.cancelAtPeriodEnd = canceledWithFuturePeriod;
+
+  // Evidence gate: refresh the freshness anchor (updatedAt) only when this
+  // verified event carries subscription-status or billing-period evidence
+  // that actually differs from the stored row. Routine re-deliveries that
+  // carry no new state (e.g. subscription.updated echoing billing-detail or
+  // scheduled-change metadata) previously stamped updatedAt on every hit,
+  // repeatedly extending the fallback grace window. The comparison here is
+  // strictly against the row's stored paid-state fields from the signature-
+  // verified payload; updatedAt/occurredAt are never treated as evidence of
+  // payment.
+  //
+  // ── Staleness guards (payload path only) ─────────────────────────────────
+  //
+  // "fetched" state is Paddle's current truth (read live from the Paddle API
+  // for this exact subscription id moments ago) and always applies. "payload"
+  // state was reconstructed from a single signed event that may be an old,
+  // out-of-order redelivery. Rather than trusting timestamps as proof of
+  // freshness, guards here use monotone invariants that hold for Paddle
+  // Billing subscriptions regardless of delivery order:
+  //
+  //  a) A Paddle Billing subscription whose status is "canceled" can never
+  //     resume to active/past_due/paused/trialing under the same sub_ id
+  //     ("You can't resume a canceled subscription"). So a payload-path
+  //     active-status event against a row canceled under the SAME id is
+  //     necessarily stale — drop it. A resubscription is a NEW sub_ id and
+  //     is handled by (c). The same holds for a row with a recorded
+  //     cancel-at-period-end intent (cancelAtPeriodEnd = true): that intent
+  //     can only be legitimately reversed when confirmed by Paddle's
+  //     current state (the "fetched" path), so a payload alone may not
+  //     clear the flag. Period maturity still clears it: a canceled-status
+  //     payload with a past/absent period end does not map to non-canceled
+  //     status and is untouched by this guard.
+  //  b) A real renewal moves current_billing_period forward. A payload
+  //     whose period ends strictly earlier than the stored one is stale —
+  //     drop it.
+  //  c) A different subscription id is never proof of payment, freshness,
+  //     or authority to replace the row (requirement 3). When the payload
+  //     id differs from the stored one, fail closed for the mutation
+  //     unless the row has no subscription yet (status "none") — the only
+  //     case where a differing id is legitimately the FIRST ever id for
+  //     the user (provisioning via subscription.created). Legitimate
+  //     resubscription under a new id therefore needs either the fetched
+  //     path (always applied) or a single crossing of this "none" state;
+  //     when it cannot be established that the new id is the user's real
+  //     current subscription, no write happens (fail closed).
+  const payloadSource = source === "payload";
+  const sameSub = row.billingSubscriptionId == null || row.billingSubscriptionId === sub.id;
+  const rowCanceled = row.status === "canceled";
+  const rowPeriodEnd = row.currentPeriodEnd?.getTime() ?? null;
+
+  // (c) differing id on the payload path + a row that already had a
+  // subscription: cannot establish legitimacy of the replacement → no
+  // mutation. (The fetched path is unaffected; resubscription via the API
+  // read still applies normally.)
+  if (payloadSource && !sameSub && row.status !== "none") return userId;
+
+  // (a) stale reactivation of a canceled row under the same id — and,
+  // payload path only, a same-id non-canceled event that would wipe a
+  // recorded cancelAtPeriodEnd intent. Fetched current Paddle state (which
+  // never reaches this guard) still legitimately reflects a reversal.
+  if (
+    payloadSource &&
+    sameSub &&
+    localStatus != null &&
+    localStatus !== "canceled" &&
+    (rowCanceled || row.cancelAtPeriodEnd === true)
+  )
+    return userId;
+
+  // (b) stale period rollback: payload ends strictly before stored end.
+  if (
+    payloadSource &&
+    sameSub &&
+    rowPeriodEnd != null &&
+    periodEnd != null &&
+    periodEnd.getTime() < rowPeriodEnd
+  )
+    return userId;
+
+  // Sanity: occurredAt, when supplied, must parse — an invalid or missing
+  // timestamp is simply not usable for ordering (never treated as proof of
+  // freshness); the guards above do not depend on it. Validating it here
+  // keeps the dead value honest: if future ordering logic uses it, the
+  // contract is already enforced.
+  if (occurredAt != null && parseOccurredAt(occurredAt) == null) return userId;
+
+  const hasNewEvidence =
+    (localStatus != null && localStatus !== row.status) ||
+    (interval != null && interval !== row.billingInterval) ||
+    (periodStart != null && (row.currentPeriodStart?.getTime() ?? null) !== periodStart.getTime()) ||
+    (periodEnd != null && (row.currentPeriodEnd?.getTime() ?? null) !== periodEnd.getTime()) ||
+    canceledWithFuturePeriod !== row.cancelAtPeriodEnd;
+
+  if (!hasNewEvidence) return userId;
+
+  updates.updatedAt = new Date();
 
   await db.update(userSubscriptions).set(updates).where(eq(userSubscriptions.userId, userId));
   return userId;
@@ -265,23 +384,29 @@ async function routePaddleEvent(event: WebhookEvent, fetchSubscriptionById: type
       if (data?.id == null) return;
       // Prefer live verification against the Paddle API when the server key
       // is configured — the payload is already signature-trusted, but the
-      // API read also heals out-of-order webhook delivery.
+      // API read also heals out-of-order webhook delivery and is applied as
+      // current provider truth ("fetched", no staleness guards needed).
       const sub = paddleServerConfigured() ? await fetchSubscriptionById(data.id) : null;
       if (sub != null) {
-        await applySubscriptionEvent(sub);
+        await applySubscriptionEvent(sub, "fetched");
         return;
       }
       // No API access (or lookup failed): apply the signature-verified
-      // payload directly — it is authenticated, just not double-checked.
+      // payload directly — it is authenticated, just not double-checked, and
+      // may be stale, so the payload staleness guards apply ("payload").
       if (data?.id != null && typeof data === "object") {
-        await applySubscriptionEvent({
-          id: data.id,
-          status: (event.data as SubscriptionLike).status,
-          customer_id: (event.data as SubscriptionLike).customer_id,
-          items: (event.data as SubscriptionLike).items,
-          current_billing_period: (event.data as SubscriptionLike).current_billing_period,
-          custom_data: (event.data as SubscriptionLike).custom_data,
-        });
+        await applySubscriptionEvent(
+          {
+            id: data.id,
+            status: (event.data as SubscriptionLike).status,
+            customer_id: (event.data as SubscriptionLike).customer_id,
+            items: (event.data as SubscriptionLike).items,
+            current_billing_period: (event.data as SubscriptionLike).current_billing_period,
+            custom_data: (event.data as SubscriptionLike).custom_data,
+          },
+          "payload",
+          event.occurredAt ?? null,
+        );
       }
       return;
 
@@ -291,7 +416,8 @@ async function routePaddleEvent(event: WebhookEvent, fetchSubscriptionById: type
       // the subscription.created webhook still provisions on its own.
       if (paddleServerConfigured() && typeof data?.subscription_id === "string") {
         const sub = await fetchSubscriptionById(data.subscription_id);
-        if (sub != null) await applySubscriptionEvent(sub);
+        // Fetch-based: this is current provider truth — applies as-is.
+        if (sub != null) await applySubscriptionEvent(sub, "fetched");
       }
       return;
 
