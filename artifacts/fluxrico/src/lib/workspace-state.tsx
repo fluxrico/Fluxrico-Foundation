@@ -10,6 +10,7 @@ import {
 } from 'react';
 import {
   LIBRARY_ENTRIES,
+  isValidStageName,
   type JourneyActivity,
   type LibraryEntry,
   type NavigatorAnswers,
@@ -331,6 +332,50 @@ export type WorkspaceHydration = {
   hasStartedNextMove?: boolean | null;
 };
 
+/**
+ * The persisted journey/event contract is small enough to validate here:
+ * unknown event keys and malformed stage values from legacy deployments
+ * must degrade honestly instead of throwing during render.
+ */
+const KNOWN_EVENT_KEYS: readonly string[] = [
+  'navigator-completed',
+  'journey-started',
+  'next-move-started',
+  'stage-completed',
+  'library-piece-added',
+  'library-piece-saved',
+];
+
+function isKnownEventKey(value: unknown): value is JourneyActivityEventKey {
+  return typeof value === 'string' && KNOWN_EVENT_KEYS.includes(value);
+}
+
+/**
+ * Runtime validation for persisted journey events — the single trust
+ * boundary between the /api/journey payload (which the server stores
+ * without read-side validation) and the renderers that map it. Entries
+ * with unknown keys, missing stamps, or invalid stage values are dropped
+ * (never fabricated), so only shape-valid events reach rendering.
+ */
+export function sanitizeSessionJourneyEvents(raw: unknown): SessionJourneyEvent[] {
+  if (!Array.isArray(raw)) return [];
+  const out: SessionJourneyEvent[] = [];
+  for (const item of raw) {
+    if (item === null || typeof item !== 'object') continue;
+    const candidate = item as Partial<SessionJourneyEvent>;
+    const { key, stamp, stage } = candidate;
+    if (!isKnownEventKey(key) || typeof stamp !== 'string') continue;
+    out.push(
+      stage === undefined || stage === null
+        ? { key, stamp }
+        : isValidStageName(stage)
+          ? { key, stamp, stage }
+          : { key, stamp },
+    );
+  }
+  return out;
+}
+
 // ── Context ──────────────────────────────────────────────────────────────────
 
 type WorkspaceStateValue = {
@@ -388,9 +433,10 @@ function WorkspaceStateProviderInner({
   // its defaults; when set, the saved payload seeds every slice of state.
   const [hydrated] = useState<boolean>(() => hydration !== null);
 
-  // Real journey events, seeded from the persisted log.
+  // Real journey events, seeded from the persisted log — sanitized so a
+  // payload saved under an earlier contract cannot throw during render.
   const [sessionEvents, setSessionEvents] = useState<SessionJourneyEvent[]>(() =>
-    Array.isArray(hydration?.events) ? (hydration!.events as SessionJourneyEvent[]) : [],
+    sanitizeSessionJourneyEvents(hydration?.events),
   );
   const sessionEventsRef = useRef<SessionJourneyEvent[]>(sessionEvents);
   useEffect(() => {
@@ -431,7 +477,7 @@ function WorkspaceStateProviderInner({
 
   // Events already in the hydrated log were seen when they fired. Events
   // recorded after mount are new: they stay unread until marked.
-  const hydratedEventCount = useRef(Array.isArray(hydration?.events) ? hydration!.events!.length : 0);
+  const hydratedEventCount = useRef(sessionEvents.length);
 
   // ── Derived notifications ──────────────────────────────────────────────────
   // One derivation, one order: real event notifications first (newest
@@ -443,18 +489,20 @@ function WorkspaceStateProviderInner({
     const total = sessionEvents.length;
     sessionEvents.forEach((event, index) => {
       const def = SESSION_JOURNEY_EVENTS[event.key];
-      if (!def.notification) return;
+      // Unknown legacy event keys degrade: skip instead of throwing.
+      if (!def || !def.notification) return;
       const id = notificationIdForEvent(event);
+      const stage = isValidStageName(event.stage) ? event.stage : undefined;
       out.push({
         id,
         timestamp: event.stamp,
         // Hydrated events were seen; events recorded after mount are new.
         read: index < hydratedEventCount.current || extraReadIds.has(id) || allRead,
         ...def.notification,
-        ...(event.key === 'stage-completed' && event.stage
+        ...(event.key === 'stage-completed' && stage
           ? {
-              title: `${event.stage} completed`,
-              detail: `You met ${event.stage}'s definition of done — the stage now counts as complete. The next stage is waiting with its own next move.`,
+              title: `${stage} completed`,
+              detail: `You met ${stage}'s definition of done — the stage now counts as complete. The next stage is waiting with its own next move.`,
             }
           : {}),
       });
@@ -541,8 +589,11 @@ function WorkspaceStateProviderInner({
       [...sessionEvents]
         .reverse()
         .map(({ key, stamp, stage }) => {
-          const { activity } = SESSION_JOURNEY_EVENTS[key];
-          if (key === 'stage-completed' && stage) {
+          const def = SESSION_JOURNEY_EVENTS[key];
+          // Unknown legacy event keys degrade: fall back to their own base
+          // activity row instead of throwing.
+          if (!def) return null;
+          if (key === 'stage-completed' && isValidStageName(stage)) {
             return {
               id: `event-stage-completed-${stage.toLowerCase()}`,
               label: `${stage} completed`,
@@ -550,8 +601,9 @@ function WorkspaceStateProviderInner({
               date: stamp,
             };
           }
-          return { ...activity, date: stamp };
-        }),
+          return { ...def.activity, date: stamp };
+        })
+        .filter((item): item is JourneyActivity => item !== null),
     [sessionEvents],
   );
 
@@ -564,7 +616,7 @@ function WorkspaceStateProviderInner({
     for (const { key, stage } of sessionEvents) {
       const mapped = STAGE_COMPLETION_BY_EVENT[key];
       if (mapped) stages.add(mapped);
-      else if (key === 'stage-completed' && stage) stages.add(stage);
+      else if (key === 'stage-completed' && isValidStageName(stage)) stages.add(stage);
     }
     return [...stages];
   }, [sessionEvents]);

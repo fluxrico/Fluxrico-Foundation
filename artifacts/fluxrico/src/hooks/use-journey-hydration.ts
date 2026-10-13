@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getJourney } from '@workspace/api-client-react';
-import type { WorkspaceHydration } from '@/lib/workspace-state';
+import { sanitizeSessionJourneyEvents, type WorkspaceHydration } from '@/lib/workspace-state';
 
 export type HydrationStatus = 'loading' | 'ready' | 'unavailable';
 
@@ -21,11 +21,20 @@ export function useJourneyHydration(): { hydration: WorkspaceHydration | null; s
       .then((response) => {
         if (cancelled) return;
         const payload = response.journey;
-        setHydration(
-          payload && typeof payload === 'object'
-            ? (payload as unknown as WorkspaceHydration)
-            : null,
-        );
+        if (!(payload && typeof payload === 'object')) {
+          setHydration(null);
+          setStatus('ready');
+          return;
+        }
+        // Trust boundary: the server stores the journey payload without
+        // read-side validation. Casts are not validation — the persisted
+        // events (the slice that renderers map unconditionally) are
+        // sanitized here so malformed or legacy entries cannot throw
+        // during render.
+        setHydration({
+          ...(payload as Record<string, unknown>),
+          events: sanitizeSessionJourneyEvents((payload as { events?: unknown }).events),
+        } as unknown as WorkspaceHydration);
         setStatus('ready');
       })
       .catch(() => {

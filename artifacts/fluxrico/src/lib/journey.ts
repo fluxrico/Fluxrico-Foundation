@@ -267,7 +267,9 @@ export function getStageIndex(name: RoadmapStageName): number {
 }
 
 export function isValidStageName(value: string | null | undefined): value is RoadmapStageName {
-  return !!value && ROADMAP_STAGES.some((stage) => stage.name.toLowerCase() === value.toLowerCase());
+  // Runtime guard: persisted payloads can carry non-string legacy values.
+  if (typeof value !== 'string') return false;
+  return ROADMAP_STAGES.some((stage) => stage.name.toLowerCase() === value.toLowerCase());
 }
 
 /** Read a `?stage=` query string, falling back to the journey's current stage. */
