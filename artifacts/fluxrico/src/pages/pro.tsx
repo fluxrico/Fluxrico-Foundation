@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
+import { Check, Sparkles, AlertCircle, Loader2, Info } from 'lucide-react';
 import { AppShell, PageHeader } from '@/components/app-shell';
 import { useSubscriptionState } from '@/lib/subscription-state';
 import { useAuthState } from '@/lib/auth-state';
 import { createBillingPortalSession, getBillingConfig } from '@workspace/api-client-react';
 import type { BillingConfigResponse } from '@workspace/api-client-react';
-import { openCheckout } from '@/lib/paddle-checkout';
+import { openCheckout, CheckoutError } from '@/lib/paddle-checkout';
 import { isPaidSubscriptionEnded, planIntervalLabel } from '@/lib/subscription-copy';
 
 /**
@@ -128,12 +128,21 @@ export default function Pro() {
           }, attempts[attempts.length - 1] + 1000),
         );
       } else {
-        // User closed the overlay without paying; nothing happened.
+        // User closed the overlay without paying: interactivity is restored
+        // (checkoutBusy is false) and an explicit strip explains what happened.
         setCheckoutPhase('closed');
       }
-    } catch {
+    } catch (error) {
+      // Every failure lands here with the UI interactive again, and the
+      // message is either one of the safe CheckoutError strings written in
+      // paddle-checkout.ts or the neutral fallback — never a raw provider
+      // payload or server internals.
       setCheckoutPhase('error');
-      setCheckoutError('Checkout could not be opened. Please check your connection and try again.');
+      setCheckoutError(
+        error instanceof CheckoutError
+          ? error.message
+          : 'Checkout could not be opened. Please check your connection and try again.',
+      );
     }
   };
 
@@ -288,6 +297,16 @@ export default function Pro() {
           >
             <Check size={15} strokeWidth={2.4} aria-hidden="true" />
             You're subscribed — Pro is active on your account.
+          </div>
+        )}
+        {checkoutPhase === 'closed' && (
+          <div
+            className="mt-6 flex items-center gap-3 rounded-2xl border border-[#DADBF0] bg-white px-5 py-3.5 text-xs font-semibold text-[#565980]"
+            role="status"
+            data-testid="pro-checkout-closed"
+          >
+            <Info size={15} strokeWidth={2} className="shrink-0 text-[#4C37EB]" aria-hidden="true" />
+            Checkout closed without completing — no payment was made. You can choose a plan again whenever you're ready.
           </div>
         )}
         {checkoutPhase === 'error' && checkoutError != null && (
