@@ -18,6 +18,13 @@ import { useJourney } from '@/hooks/use-journey';
 import { ROADMAP_STAGES, ROADMAP_STAGE_GUIDES, describeCompletedStages, getStageIndex } from '@/lib/journey';
 import type { JourneyActivity, RoadmapStageName } from '@/lib/journey';
 import { useAuthState } from '@/lib/auth-state';
+import { useSubscriptionState } from '@/lib/subscription-state';
+import {
+  isPaidSubscriptionEnded,
+  planIntervalLabel,
+  subscriptionStateLabel,
+  trialRemainingCopy,
+} from '@/lib/subscription-copy';
 import { useWorkspaceState } from '@/lib/workspace-state';
 
 // ── Profile vocabulary ───────────────────────────────────────────────────────
@@ -391,6 +398,89 @@ function ActivityTab({ activity }: { activity: JourneyActivity[] }) {
   );
 }
 
+// ── Subscription card ──────────────────────────────────────────────────────
+
+/**
+ * Subscription status, presented on the account page from the one shared
+ * source: useSubscriptionState mirrors GET /api/subscription, and every
+ * sentence here is built from what that response already contains (state,
+ * plan interval, server-computed trial day counts). Loading and load-
+ * failure states are stated honestly — never a guessed lifecycle.
+ */
+function ProfileSubscriptionCard() {
+  const { status, subscription, refresh } = useSubscriptionState();
+
+  const copy =
+    status === 'ready' && subscription
+      ? subscription.state === 'trialing'
+        ? `${trialRemainingCopy(subscription)} Pro billing only begins after you choose a plan — nothing is charged automatically.`
+        : subscription.state === 'pro'
+          ? `Pro active — ${planIntervalLabel(subscription)} plan.${
+              subscription.plan?.cancelAtPeriodEnd
+                ? ' Renews off — access continues until the current period ends.'
+                : ''
+            }`
+          : isPaidSubscriptionEnded(subscription)
+            ? 'Your Pro subscription has ended — your journey data is intact. Choose a plan again to continue with Pro.'
+            : 'Trial ended — your journey data is intact. Pro keeps your full workspace going.'
+      : status === 'error'
+        ? 'Your subscription status could not be loaded right now.'
+        : 'Checking your subscription…';
+
+  return (
+    <section className="mt-8 border-t border-[#DDDEEC] pt-6" aria-labelledby="profile-subscription-title" data-testid="card-profile-subscription">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <h2 id="profile-subscription-title" className="text-[0.66rem] font-bold uppercase tracking-[0.2em] text-[#6258D0]">
+              Fluxrico Pro
+            </h2>
+            {status === 'ready' && subscription && (
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.56rem] font-bold uppercase tracking-[0.13em] ${
+                  subscription.state === 'pro'
+                    ? 'bg-[#E4F9EF] text-[#1F7A4D]'
+                    : subscription.state === 'trialing'
+                      ? 'bg-[#E0F9FC] text-[#168BA5]'
+                      : 'bg-[#FDF1EC] text-[#A05B2E]'
+                }`}
+                data-testid="badge-profile-subscription-state"
+              >
+                {subscriptionStateLabel(subscription)}
+              </span>
+            )}
+          </div>
+          <p className="mt-2 text-sm leading-6 text-[#727696]" data-testid="text-profile-subscription">
+            {copy}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-3 sm:justify-end">
+          {status === 'error' && (
+            <button
+              type="button"
+              onClick={() => void refresh()}
+              className="fluxrico-focus inline-flex min-h-10 items-center rounded-full border border-[#D4D5E8] bg-white px-4 text-[0.64rem] font-bold uppercase tracking-[0.13em] text-[#5B56B5] transition-colors hover:border-[#8E88E1]"
+              data-testid="button-profile-subscription-retry"
+            >
+              Try again
+            </button>
+          )}
+          <Link
+            href="/pro"
+            className="fluxrico-focus inline-flex min-h-10 items-center rounded-full border border-[#D4D5E8] bg-white px-4 text-[0.64rem] font-bold uppercase tracking-[0.13em] text-[#5B56B5] transition-colors hover:border-[#8E88E1]"
+            data-testid="link-profile-subscription-pro"
+          >
+            {(subscription?.state === 'trialing' && 'Upgrade to Pro') ||
+              (subscription?.state === 'pro' && 'View plan') ||
+              'See Pro'}
+            <ArrowRight size={13} strokeWidth={2.2} className="ml-1.5" />
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Profile() {
@@ -523,6 +613,9 @@ export default function Profile() {
             />
           </div>
         </section>
+
+        {/* 2b. Subscription status — one shared source, honest in every state. */}
+        <ProfileSubscriptionCard />
 
         {/* 3. Tabs — one set, three views, no extra chrome. */}
         <div

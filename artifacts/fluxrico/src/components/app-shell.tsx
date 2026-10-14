@@ -1,9 +1,11 @@
 import { useState, type ReactNode } from 'react';
-import { Bell, Compass, Home, Library, Menu, Route, Settings2, UserRound, X } from 'lucide-react';
+import { Bell, Compass, Home, Library, Menu, Route, Settings2, Sparkles, UserRound, X } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { FluxricoMark } from '@/components/fluxrico-mark';
 import { JOURNEY } from '@/lib/journey';
 import { useAuthState } from '@/lib/auth-state';
+import { useSubscriptionState } from '@/lib/subscription-state';
+import { subscriptionStateLabel } from '@/lib/subscription-copy';
 import { useWorkspaceState } from '@/lib/workspace-state';
 
 /** Derives two-letter avatar initials from a resolved display name. */
@@ -40,6 +42,52 @@ type WorkspaceSidebarProps = {
   mobileOpen: boolean;
   onClose: () => void;
 };
+
+/**
+ * One subscription affordance in the workspace nav: a Pro entry with a
+ * server-derived lifecycle badge. While the subscription request is loading
+ * or has failed, the badge is simply absent — the entry is still a working
+ * link to /pro, and no state is ever guessed client-side.
+ */
+function ProNavigationItem({ onClose }: { onClose: () => void }) {
+  const [location] = useLocation();
+  const { status, subscription } = useSubscriptionState();
+  const active = isNavActive(location, '/pro');
+  const badge = status === 'ready' ? subscriptionStateLabel(subscription) : null;
+  const badgeClasses =
+    subscription?.state === 'pro'
+      ? 'bg-[#22C06B]/20 text-[#8FE7B9]'
+      : subscription?.state === 'trialing'
+        ? 'bg-[#16C6EA]/15 text-[#7FDCF6]'
+        : 'bg-white/10 text-[#AEB2D7]';
+
+  return (
+    <Link
+      href="/pro"
+      onClick={onClose}
+      aria-current={active ? 'page' : undefined}
+      className={`fluxrico-focus flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition-colors ${
+        active
+          ? 'bg-white/12 text-white shadow-[inset_3px_0_0_#16C7EC]'
+          : 'text-[#B8BCE0] hover:bg-white/[0.07] hover:text-white'
+      }`}
+      data-testid="link-nav-pro"
+    >
+      <Sparkles size={18} strokeWidth={1.8} className={active ? 'text-[#5CD8F3]' : 'text-[#969BCB]'} />
+      <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+        <span>Fluxrico Pro</span>
+        {badge && (
+          <span
+            className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[0.56rem] font-bold uppercase tracking-[0.12em] ${badgeClasses}`}
+            data-testid="badge-nav-pro-state"
+          >
+            {badge}
+          </span>
+        )}
+      </span>
+    </Link>
+  );
+}
 
 function WorkspaceSidebar({ mobileOpen, onClose }: WorkspaceSidebarProps) {
   const [location] = useLocation();
@@ -99,6 +147,7 @@ function WorkspaceSidebar({ mobileOpen, onClose }: WorkspaceSidebarProps) {
                 </Link>
               );
             })}
+            <ProNavigationItem onClose={onClose} />
           </nav>
         </div>
 

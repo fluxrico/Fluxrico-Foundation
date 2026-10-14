@@ -3,9 +3,10 @@ import { Check, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
 import { AppShell, PageHeader } from '@/components/app-shell';
 import { useSubscriptionState } from '@/lib/subscription-state';
 import { useAuthState } from '@/lib/auth-state';
-import { getBillingConfig } from '@workspace/api-client-react';
+import { createBillingPortalSession, getBillingConfig } from '@workspace/api-client-react';
 import type { BillingConfigResponse } from '@workspace/api-client-react';
 import { openCheckout } from '@/lib/paddle-checkout';
+import { isPaidSubscriptionEnded, planIntervalLabel } from '@/lib/subscription-copy';
 
 /**
  * Fluxrico Pro — pricing & upgrade surface with real Paddle checkout.
@@ -142,6 +143,28 @@ export default function Pro() {
   latestStateRef.current = subscription?.state ?? null;
 
   const firstName = (user?.name ?? '').trim().split(/\s+/)[0] || 'there';
+  const paidEnded = subscription ? isPaidSubscriptionEnded(subscription) : false;
+
+  // Billing management for existing Pro users: opens the real Paddle
+  // customer portal via the same server route the Settings page uses. The
+  // button is only rendered once the server itself reports state "pro".
+  const [portalBusy, setPortalBusy] = useState(false);
+  const [portalError, setPortalError] = useState<string | null>(null);
+  const openBillingPortal = async () => {
+    setPortalError(null);
+    setPortalBusy(true);
+    try {
+      const result = await createBillingPortalSession();
+      window.open(result.url, '_blank', 'noopener');
+      await refresh();
+    } catch {
+      setPortalError(
+        'Billing portal is unavailable right now. If you just subscribed, try again in a moment.',
+      );
+    } finally {
+      setPortalBusy(false);
+    }
+  };
 
   const stateCopy: Record<
     string,
@@ -161,6 +184,14 @@ export default function Pro() {
       description:
         'Everything you built — direction, roadmap, library, history — is exactly where you left it. Pro keeps your full workspace going and supports what ships next.',
     },
+    // A real paid subscription reached its end (server reports state
+    // "expired" with a canceled plan) — worded honestly, not as a trial.
+    'paid-ended': {
+      eyebrow: 'Your Fluxrico Pro subscription has ended',
+      title: 'Your journey stays. Pro keeps it moving.',
+      description:
+        'Everything you built — direction, roadmap, library, history — is exactly where you left it. Choose a plan again to continue with Pro.',
+    },
     pro: {
       eyebrow: 'Fluxrico Pro · Active',
       title: 'Pro is active on your account.',
@@ -175,8 +206,17 @@ export default function Pro() {
     },
   };
 
-  const key = isPro ? 'pro' : subscription?.state === 'expired' ? 'expired' : subscription?.state === 'trialing' ? 'trialing' : 'neutral';
-  const copy = stateCopy[key] ?? stateCopy.neutral;
+  const key =
+    isPro
+      ? 'pro'
+      : subscription?.state === 'expired'
+        ? isPaidSubscriptionEnded(subscription)
+          ? 'paid-ended'
+          : 'expired'
+        : subscription?.state === 'trialing'
+          ? 'trialing'
+          : 'neutral';
+  const copy = stateCopy[key as keyof typeof stateCopy] ?? stateCopy.neutral;
   const alreadyPro = isPro;
   const checkoutBusy = checkoutPhase === 'opening' || checkoutPhase === 'confirming';
 
@@ -277,15 +317,39 @@ export default function Pro() {
               }`}
               data-testid="pro-state-badge"
             >
-              {subscription.state === 'pro' ? 'Pro active' : subscription.state === 'trialing' ? 'Free trial' : 'Trial ended'}
+              {subscription.state === 'pro'
+                ? 'Pro active'
+                : subscription.state === 'trialing'
+                  ? 'Free trial'
+                  : paidEnded
+                    ? 'Subscription ended'
+                    : 'Trial ended'}
             </span>
+            {subscription.state === 'pro' && (
+              <button
+                type="button"
+                onClick={() => void openBillingPortal()}
+                disabled={portalBusy}
+                className="fluxrico-focus inline-flex min-h-8 items-center rounded-full border border-[#DADBF0] bg-white px-3.5 text-[0.62rem] font-bold uppercase tracking-[0.13em] text-[#5B56B5] transition-colors hover:border-[#8E88E1] disabled:opacity-60"
+                data-testid="button-pro-manage-billing"
+              >
+                {portalBusy ? 'Opening…' : 'Manage billing'}
+              </button>
+            )}
             {subscription.state === 'trialing' &&
-              `${subscription.trialDaysRemaining} ${subscription.trialDaysRemaining === 1 ? 'day' : 'days'} remaining in your 3-day trial.`}
+              `${subscription.trialDaysRemaining} ${subscription.trialDaysRemaining === 1 ? 'day' : 'days'} remaining of your ${subscription.trialLengthDays}-day trial.`}
             {subscription.state === 'expired' &&
-              'Your journey data is safe. Pro keeps your full workspace going after the trial.'}
+              (paidEnded
+                ? 'Your Pro subscription has ended — your journey data is safe. Choose a plan again to continue with Pro.'
+                : 'Your journey data is safe. Pro keeps your full workspace going after the trial.')}
             {subscription.state === 'pro' &&
               subscription.plan &&
-              `Plan: ${subscription.plan.interval === 'yearly' ? 'Annual' : 'Monthly'}${subscription.plan.cancelAtPeriodEnd ? ' · renews off at period end' : ''}.`}
+              `Plan: ${planIntervalLabel(subscription) === 'annual' ? 'Annual' : 'Monthly'}${subscription.plan.cancelAtPeriodEnd ? ' · renews off at period end' : ''}.`}
+            {portalError != null && (
+              <p className="text-[#A05B2E]" role="alert" data-testid="pro-portal-error">
+                {portalError}
+              </p>
+            )}
           </div>
         )}
 

@@ -11,6 +11,7 @@ import { RoadmapProgress } from '@/components/roadmap-progress';
 import { useJourney } from '@/hooks/use-journey';
 import { useAuthState } from '@/lib/auth-state';
 import { useSubscriptionState } from '@/lib/subscription-state';
+import { isPaidSubscriptionEnded } from '@/lib/subscription-copy';
 import { useWorkspaceState } from '@/lib/workspace-state';
 
 export default function Dashboard() {
@@ -19,6 +20,10 @@ export default function Dashboard() {
   const { settings, recordNextMoveStarted, hasStartedNextMove } = useWorkspaceState();
   const { user } = useAuthState();
   const { subscription, isExpired } = useSubscriptionState();
+  // The server reports state "expired" both for a trial that ran out and for
+  // a paid subscription that reached its end; the plan payload distinguishes
+  // them and the copy below follows it.
+  const paidEnded = isPaidSubscriptionEnded(subscription);
   // A user without Navigator answers sees the new-user state; completing
   // Navigator personalizes the dashboard for the rest of the session.
   const newUser = !journey.hasNavigatorData;
@@ -108,9 +113,13 @@ export default function Dashboard() {
                 data-testid="banner-trial-expired"
               >
                 <div className="min-w-0">
-                  <p className="text-sm font-bold text-[#7A5232]">Your free trial has ended.</p>
+                  <p className="text-sm font-bold text-[#7A5232]">
+                    {paidEnded ? 'Your Pro subscription has ended.' : 'Your free trial has ended.'}
+                  </p>
                   <p className="mt-1 text-xs leading-5 text-[#8A7460]">
-                    Your journey, roadmap, and library are exactly as you left them. Pro keeps your full workspace going after the trial.
+                    {paidEnded
+                      ? 'Your journey, roadmap, and library are exactly as you left them. Choose a plan again to continue with Pro.'
+                      : 'Your journey, roadmap, and library are exactly as you left them. Pro keeps your full workspace going after the trial.'}
                   </p>
                 </div>
                 <Link

@@ -32,6 +32,11 @@ import { useLandingTheme } from '@/components/landing/theme';
 import type { ThemePreference } from '@/components/landing/theme';
 import { useAuthState } from '@/lib/auth-state';
 import { useSubscriptionState } from '@/lib/subscription-state';
+import {
+  isPaidSubscriptionEnded,
+  planIntervalLabel,
+  trialRemainingCopy,
+} from '@/lib/subscription-copy';
 import { useWorkspaceState } from '@/lib/workspace-state';
 import type { WorkspaceSettings } from '@/lib/workspace-state';
 import { createBillingPortalSession } from '@workspace/api-client-react';
@@ -742,53 +747,75 @@ export default function Settings() {
                   </div>
                 )}
 
-                {/* Pro / trial status — mirrors the server-derived subscription state. */}
-                {subscriptionStatus === 'ready' && subscription && (
-                  <div
-                    className="mt-5 flex flex-col gap-3 rounded-2xl border border-[#ECECF3] bg-[#FAFAFE] p-4 sm:flex-row sm:items-center sm:justify-between"
-                    data-testid="settings-pro-status"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-[#343568]">Fluxrico Pro</p>
-                      <p className="mt-1 text-xs leading-5 text-[#8587A3]">
-                        {subscription.state === 'pro' &&
-                          `Active — ${subscription.plan?.interval === 'yearly' ? 'annual' : 'monthly'} plan.${
-                            subscription.plan?.cancelAtPeriodEnd
-                              ? ' Renews off — access continues until the current period ends.'
-                              : ''
-                          } Manage billing with Paddle anytime.`}
-                        {subscription.state === 'trialing' &&
-                          `Free trial — ${subscription.trialDaysRemaining} ${subscription.trialDaysRemaining === 1 ? 'day' : 'days'} remaining of ${subscription.trialLengthDays}.`}
-                        {subscription.state === 'expired' &&
-                          'Trial ended — your journey data is intact. Pro keeps your full workspace going.'}
-                      </p>
-                    </div>
-                    {subscription.state !== 'pro' ? (
-                      <Link
-                        href="/pro"
-                        className={`${QUIET_BUTTON} shrink-0 justify-center`}
-                        data-testid="link-settings-upgrade"
-                      >
-                        {subscription.state === 'expired' ? 'See Pro' : 'Upgrade to Pro'}
-                      </Link>
-                    ) : (
+                {/* Pro / trial status — mirrors the server-derived subscription state in
+                    every lifecycle: loading, load failure, and all reported states.
+                    Nothing here fabricates a state the API did not report. */}
+                <div
+                  className="mt-5 flex flex-col gap-3 rounded-2xl border border-[#ECECF3] bg-[#FAFAFE] p-4 sm:flex-row sm:items-center sm:justify-between"
+                  data-testid="settings-pro-status"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-[#343568]">Fluxrico Pro</p>
+                    <p className="mt-1 text-xs leading-5 text-[#8587A3]" data-testid="text-settings-subscription">
+                      {subscriptionStatus === 'ready' && subscription && (
+                        <>
+                          {subscription.state === 'pro' &&
+                            `Active — ${planIntervalLabel(subscription)} plan.${
+                              subscription.plan?.cancelAtPeriodEnd
+                                ? ' Renews off — access continues until the current period ends.'
+                                : ''
+                            } Manage billing with Paddle anytime.`}
+                          {subscription.state === 'trialing' &&
+                            `${trialRemainingCopy(subscription)} Pro billing only begins after you choose a plan — nothing is charged automatically.`}
+                          {subscription.state === 'expired' &&
+                            (isPaidSubscriptionEnded(subscription)
+                              ? 'Your Pro subscription has ended — your journey data is intact. Choose a plan again to continue with Pro.'
+                              : 'Trial ended — your journey data is intact. Pro keeps your full workspace going.')}
+                        </>
+                      )}
+                      {subscriptionStatus === 'loading' && 'Checking your subscription…'}
+                      {subscriptionStatus === 'error' &&
+                        'Your subscription status could not be loaded right now.'}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 flex-wrap items-center gap-3 sm:justify-end">
+                    {subscriptionStatus === 'ready' && subscription &&
+                      (subscription.state !== 'pro' ? (
+                        <Link
+                          href="/pro"
+                          className={`${QUIET_BUTTON} justify-center`}
+                          data-testid="link-settings-upgrade"
+                        >
+                          {subscription.state === 'expired' ? 'See Pro' : 'Upgrade to Pro'}
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => void openBillingPortal()}
+                          disabled={portalBusy}
+                          className={`${QUIET_BUTTON} justify-center ${portalBusy ? 'opacity-60' : ''}`}
+                          data-testid="button-settings-manage-billing"
+                        >
+                          {portalBusy ? 'Opening…' : 'Manage billing'}
+                        </button>
+                      ))}
+                    {subscriptionStatus === 'error' && (
                       <button
                         type="button"
-                        onClick={() => void openBillingPortal()}
-                        disabled={portalBusy}
-                        className={`${QUIET_BUTTON} shrink-0 justify-center ${portalBusy ? 'opacity-60' : ''}`}
-                        data-testid="button-settings-manage-billing"
+                        onClick={() => void refresh()}
+                        className={QUIET_BUTTON}
+                        data-testid="button-settings-retry-subscription"
                       >
-                        {portalBusy ? 'Opening…' : 'Manage billing'}
+                        Try again
                       </button>
                     )}
-                    {portalError != null && (
-                      <p className="text-xs leading-5 text-[#A05B2E]" role="alert" data-testid="settings-portal-error">
-                        {portalError}
-                      </p>
-                    )}
                   </div>
-                )}
+                  {portalError != null && (
+                    <p className="text-xs leading-5 text-[#A05B2E] sm:w-full" role="alert" data-testid="settings-portal-error">
+                      {portalError}
+                    </p>
+                  )}
+                </div>
               </SettingsSection>
 
               {/* 2. Appearance — the existing shared theme preference. */}
