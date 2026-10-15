@@ -154,6 +154,20 @@ function billingIntervalFromPrice(price: { billing_cycle?: { interval: string; f
 }
 
 /**
+ * Parse an optional provider timestamp into a Date, or null when the value
+ * is absent or malformed. Never fabricates a date: an invalid input yields
+ * null so the caller keeps the existing stored value instead of writing an
+ * Invalid Date into the database (an Invalid Date would make the update
+ * throw and, via the webhook ledger's failure path, trigger endless
+ * provider retries).
+ */
+function parseOptionalDate(value: string | null | undefined): Date | null {
+  if (value == null || value === "") return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/**
  * Apply a verified subscription event to the owning user's row.
  * Returns the affected userId, or null when the event carries no usable
  * user link (nothing to do; never fabricates state).
@@ -177,8 +191,11 @@ export async function applySubscriptionEvent(
   const interval = billingIntervalFromPrice(price);
   const localStatus = localStatusFor(sub.status);
 
-  const periodStart = sub.current_billing_period?.starts_at != null ? new Date(sub.current_billing_period.starts_at) : null;
-  const periodEnd = sub.current_billing_period?.ends_at != null ? new Date(sub.current_billing_period.ends_at) : null;
+  // Absent or malformed timestamps resolve to null: the conditional writes
+  // below then keep the stored dates, matching the documented policy that
+  // only verified valid values change billing state.
+  const periodStart = parseOptionalDate(sub.current_billing_period?.starts_at);
+  const periodEnd = parseOptionalDate(sub.current_billing_period?.ends_at);
 
   const updates: Partial<UserSubscription> = {};
 
