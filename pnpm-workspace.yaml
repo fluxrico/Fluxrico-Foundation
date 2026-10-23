@@ -75,6 +75,10 @@ onlyBuiltDependencies:
   - unrs-resolver
 
 overrides:
+  # Security: patched versions of Express transitive deps (proxy-addr IP-
+  # spoofing CVE fixed in 2.0.8; qs parsing CVEs fixed in 6.16.0+).
+  "express>proxy-addr": "^2.0.8"
+  "express>qs": "^6.16.0"
   # replit uses linux-x64 only, we can exclude all other platforms
   "esbuild>@esbuild/darwin-arm64": "-"
   "esbuild>@esbuild/darwin-x64": "-"
