@@ -22,32 +22,39 @@ import {
   getSessionUser,
   setSessionCookie,
 } from "../lib/session.js";
+import {
+  clearLimit,
+  consumeLimit,
+  createIpRateLimiter,
+  emailAccountKey,
+  sendTooMany,
+  type RateLimitOptions,
+} from "../middlewares/rateLimit.js";
 
 const router: IRouter = Router();
 
 /**
- * Fixed-window in-memory rate limiter for the two abusable email endpoints
- * (5 requests / 15 min / IP). Stops unlimited resend/reset floods; swap in a
- * shared-store limiter if the API ever scales horizontally.
+ * Shared (Redis-backed) fixed-window limits — see middlewares/rateLimit.ts.
+ * All windows 15 min. Conservative start values chosen to avoid accidental
+ * lockouts (e.g. single-IP NAT offices); tune after observing real failure rates.
+ *
+ * The per-email login counter is keyed on the NORMALIZED submitted email and
+ * incremented before the account lookup, so real and nonexistent addresses
+ * consume attempts identically (no enumeration signal); it is cleared on a
+ * successful login, making lockouts time-bounded, never permanent.
  */
-const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
-const RATE_LIMIT_MAX = 5;
-const rateBuckets = new Map<string, number[]>();
-
-function rateLimited(key: string, now = Date.now()): boolean {
-  const cutoff = now - RATE_LIMIT_WINDOW_MS;
-  const recent = (rateBuckets.get(key) ?? []).filter((stamp) => stamp > cutoff);
-  if (recent.length >= RATE_LIMIT_MAX) {
-    rateBuckets.set(key, recent);
-    return true;
-  }
-  rateBuckets.set(key, [...recent, now]);
-  return false;
-}
-
-function tooMany(res: import("express").Response): void {
-  res.status(429).json({ error: "rate_limited", message: "Too many requests. Please wait a few minutes." });
-}
+const WINDOW_15_MIN = 15 * 60 * 1000;
+const LOGIN_ATTEMPTS: RateLimitOptions = { prefix: "rl:login:ip", limit: 10, windowMs: WINDOW_15_MIN };
+const LOGIN_ACCOUNT_FAILURES: RateLimitOptions = { prefix: "rl:login:email", limit: 10, windowMs: WINDOW_15_MIN };
+const REGISTER_ATTEMPTS: RateLimitOptions = { prefix: "rl:register:ip", limit: 5, windowMs: WINDOW_15_MIN };
+const FORGOT_ATTEMPTS: RateLimitOptions = { prefix: "rl:forgot:ip", limit: 5, windowMs: WINDOW_15_MIN };
+const FORGOT_ACCOUNT: RateLimitOptions = { prefix: "rl:forgot:email", limit: 5, windowMs: WINDOW_15_MIN };
+const RESEND_ATTEMPTS: RateLimitOptions = { prefix: "rl:resend:ip", limit: 5, windowMs: WINDOW_15_MIN };
+const RESEND_ACCOUNT: RateLimitOptions = { prefix: "rl:resend:email", limit: 5, windowMs: WINDOW_15_MIN };
+// /verify + /reset-password probe high-entropy single-use tokens; the cap
+// exists to blunt sustained guessing and keep costs bounded, not because
+// 20 attempts realistically undermine entropy.
+const TOKEN_GUESS_ATTEMPTS: RateLimitOptions = { prefix: "rl:tokens:ip", limit: 20, windowMs: WINDOW_15_MIN };
 
 /** Serialize a user for the client. passwordHash never crosses this line. */
 function publicUser(user: typeof users.$inferSelect) {
@@ -69,7 +76,7 @@ function appBaseUrl(req: Request): string {
 
 // ── Register ─────────────────────────────────────────────────────────────────
 
-router.post("/register", async (req, res) => {
+router.post("/register", createIpRateLimiter(REGISTER_ATTEMPTS), async (req, res) => {
   try {
     const input = RegisterBody.parse(req.body);
 
@@ -117,10 +124,20 @@ router.post("/register", async (req, res) => {
 
 // ── Login ────────────────────────────────────────────────────────────────────
 
-router.post("/login", async (req, res) => {
+router.post("/login", createIpRateLimiter(LOGIN_ATTEMPTS), async (req, res) => {
   try {
     const input = LoginBody.parse(req.body);
     const email = input.email.trim().toLowerCase();
+
+    // Account-keyed attempt cap is consumed BEFORE the lookup so unknown
+    // addresses occupy the same bucket as real ones (enumeration-safe), and
+    // it is reset after every successful login (time-bounded, never
+    // permanent). Same generic 429 as the per-IP limit.
+    const attempts = await consumeLimit(LOGIN_ACCOUNT_FAILURES, emailAccountKey(email));
+    if (!attempts.allowed) {
+      sendTooMany(res, attempts.retryAfterSeconds);
+      return;
+    }
 
     const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
@@ -137,6 +154,11 @@ router.post("/login", async (req, res) => {
 
     const ok = await verifyPassword(user.passwordHash, input.password);
     if (!ok) throw new HttpError(401, "invalid_credentials", "Invalid email or password.");
+
+    // Password is correct — a brute-forcer can no longer be probing this
+    // account: purge the shared attempt counter so the real user's next
+    // sign-in (or an email they later need to verify) starts from zero.
+    await clearLimit(LOGIN_ACCOUNT_FAILURES, emailAccountKey(email));
 
     if (!user.emailVerified) {
       throw new HttpError(403, "email_not_verified", "Verify your email before signing in. Check your inbox for the link.");
@@ -179,7 +201,7 @@ router.get("/me", async (req, res) => {
 
 // ── Verify email ─────────────────────────────────────────────────────────────
 
-router.post("/verify", async (req, res) => {
+router.post("/verify", createIpRateLimiter(TOKEN_GUESS_ATTEMPTS), async (req, res) => {
   try {
     const input = VerifyEmailBody.parse(req.body);
     const result = await consumeToken(input.token);
@@ -205,13 +227,17 @@ router.post("/verify", async (req, res) => {
 
 // ── Resend verification ──────────────────────────────────────────────────────
 
-router.post("/resend-verification", async (req, res) => {
+router.post("/resend-verification", createIpRateLimiter(RESEND_ATTEMPTS), async (req, res) => {
   try {
     const input = ForgotPasswordBody.parse(req.body);
     const email = input.email.trim().toLowerCase();
 
-    if (rateLimited(`resend:${req.ip ?? "unknown"}`)) {
-      tooMany(res);
+    // Per-account (normalized submitted email) cap, keyed and consumed before
+    // any existence branch so real/unknown/verified addresses are
+    // indistinguishable — enumeration-safe and shared across API instances.
+    const accountOutcome = await consumeLimit(RESEND_ACCOUNT, emailAccountKey(email));
+    if (!accountOutcome.allowed) {
+      sendTooMany(res, accountOutcome.retryAfterSeconds);
       return;
     }
 
@@ -233,13 +259,16 @@ router.post("/resend-verification", async (req, res) => {
 
 // ── Forgot password ──────────────────────────────────────────────────────────
 
-router.post("/forgot-password", async (req, res) => {
+router.post("/forgot-password", createIpRateLimiter(FORGOT_ATTEMPTS), async (req, res) => {
   try {
     const input = ForgotPasswordBody.parse(req.body);
     const email = input.email.trim().toLowerCase();
 
-    if (rateLimited(`forgot:${req.ip ?? "unknown"}`)) {
-      tooMany(res);
+    // Per-account cap on normalized submitted email, keyed before the lookup
+    // (enumeration-safe across API instances — same rationale as resend).
+    const accountOutcome = await consumeLimit(FORGOT_ACCOUNT, emailAccountKey(email));
+    if (!accountOutcome.allowed) {
+      sendTooMany(res, accountOutcome.retryAfterSeconds);
       return;
     }
 
@@ -259,7 +288,7 @@ router.post("/forgot-password", async (req, res) => {
 
 // ── Reset password ───────────────────────────────────────────────────────────
 
-router.post("/reset-password", async (req, res) => {
+router.post("/reset-password", createIpRateLimiter(TOKEN_GUESS_ATTEMPTS), async (req, res) => {
   try {
     const input = ResetPasswordBody.parse(req.body);
     const result = await consumeToken(input.token);
